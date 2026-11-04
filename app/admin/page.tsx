@@ -1,31 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 export default function AdminPage() {
   const [pass, setPass] = useState("");
   const [ok, setOk] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [desc, setDesc] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState("");
-
   async function load() {
-    const { data: p } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (p) setProducts(p);
-    const { data: o } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-    if (o) setOrders(o);
+    const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+    if (data) setProducts(data);
   }
   useEffect(() => { if (ok) load(); }, [ok]);
-
   async function addProduct() {
     if (!name || !price) return setMsg("Name + Price required");
     setMsg("Uploading...");
@@ -43,12 +33,6 @@ export default function AdminPage() {
     setName(""); setPrice(""); setDesc(""); setFile(null);
     load();
   }
-
-  async function del(id: string) {
-    await supabase.from("products").delete().eq("id", id);
-    load();
-  }
-
   if (!ok) return (
     <div className="max-w-sm mx-auto p-6 mt-20">
       <h1 className="text-2xl font-bold mb-4">SOSA Admin</h1>
@@ -56,7 +40,6 @@ export default function AdminPage() {
       <button onClick={() => pass ? setOk(true) : alert("Enter password")} className="w-full bg-black text-white p-3 rounded">Enter Admin</button>
     </div>
   );
-
   return (
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Add Product</h1>
@@ -70,13 +53,7 @@ export default function AdminPage() {
       {products.map(p => (
         <div key={p.id} className="flex justify-between items-center border p-2 rounded mb-2">
           <span>{p.name} - {p.price_pi} Pi</span>
-          <button onClick={() => del(p.id)} className="text-red-500 text-sm">Delete</button>
-        </div>
-      ))}
-      <h2 className="text-xl font-bold mt-8 mb-2">Orders ({orders.length})</h2>
-      {orders.map(o => (
-        <div key={o.id} className="border p-2 rounded mb-2 text-sm">
-          {o.buyer_name} - {o.product_name} - {o.amount_pi} Pi - {o.status}
+          <button onClick={async () => { await supabase.from("products").delete().eq("id", p.id); load(); }} className="text-red-500 text-sm">Delete</button>
         </div>
       ))}
     </div>
