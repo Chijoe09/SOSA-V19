@@ -20,6 +20,7 @@ type Product = {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<Product[]>([]);
+  const [cartLoaded, setCartLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [showCart, setShowCart] = useState(false);
@@ -27,11 +28,25 @@ export default function Home() {
 
   const price = (p: Product) => Number(p.pricePi ?? p.price_pi ?? 0);
 
+  // 1. Load saved cart FIRST
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sosa_cart");
+      if (saved) setCart(JSON.parse(saved));
+    } catch {}
+    setCartLoaded(true);
+  }, []);
+
+  // 2. Save cart ONLY after it has been loaded
+  useEffect(() => {
+    if (!cartLoaded) return;
+    try { localStorage.setItem("sosa_cart", JSON.stringify(cart)); } catch {}
+  }, [cart, cartLoaded]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        // Timeout after 8 seconds - don't hang forever
         const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase timed out - check internet / RLS")), 8000));
         const query = supabase.from("products").select("*").order("created_at", { ascending: false });
         const { data, error } = await Promise.race([query, timeout]) as any;
@@ -45,7 +60,6 @@ export default function Home() {
       if (!cancelled) setLoading(false);
     }
     load();
-    // Init Pi once, don't loop forever
     const Pi = (window as any).Pi;
     if (Pi) { try { Pi.init({ version: "2.0", sandbox: false }); } catch (e) {} }
     return () => { cancelled = true; };
@@ -133,4 +147,4 @@ export default function Home() {
       <footer>© SOSA-outfits - Sophisticated Samples</footer>
     </main>
   );
-    }
+        }
