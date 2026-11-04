@@ -1,11 +1,17 @@
-export interface Product {
-  id: string; name: string; pricePi: number; category: string;
-  image: string; stock: number; active: boolean;
-}
-export interface CartLine { product: Product; qty: number }
-export type DeliveryType = "pickup" | "delivery";
-export interface OrderRow {
-  id?: string; paymentId: string; txid: string; customerName: string; phone: string;
-  address: string; deliveryType: DeliveryType; productIds: { id: string; qty: number }[];
-  totalPi: number; status: string; created_at?: string;
-}
+export type Product = {
+  id: string;
+  name: string;
+  price_pi: number;
+  description?: string;
+  image_url?: string;
+  created_at?: string;
+};
+
+export type Order = {
+  id: string;
+  buyer_name?: string;
+  product_name?: string;
+  amount_pi?: number;
+  status?: string;
+  created_at?: string;
+};
