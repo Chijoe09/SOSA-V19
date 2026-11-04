@@ -28,7 +28,6 @@ export default function Home() {
 
   const price = (p: Product) => Number(p.pricePi ?? p.price_pi ?? 0);
 
-  // 1. Load saved cart FIRST
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sosa_cart");
@@ -37,7 +36,6 @@ export default function Home() {
     setCartLoaded(true);
   }, []);
 
-  // 2. Save cart ONLY after it has been loaded
   useEffect(() => {
     if (!cartLoaded) return;
     try { localStorage.setItem("sosa_cart", JSON.stringify(cart)); } catch {}
@@ -147,4 +145,4 @@ export default function Home() {
       <footer>© SOSA-outfits - Sophisticated Samples</footer>
     </main>
   );
-        }
+          }
