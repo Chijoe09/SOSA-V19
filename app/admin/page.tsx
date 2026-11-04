@@ -7,18 +7,10 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type Product = {
-  id: string;
-  name: string;
-  price_pi: number;
-  description?: string;
-  image_url?: string;
-};
-
-export default function AdminRoom() {
+export default function AdminPage() {
   const [pass, setPass] = useState("");
   const [ok, setOk] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -26,14 +18,13 @@ export default function AdminRoom() {
   const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState("");
 
-  async function loadProducts() {
+  async function load() {
     const { data: p } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (p) setProducts(p as Product[]);
+    if (p) setProducts(p);
     const { data: o } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (o) setOrders(o);
   }
-
-  useEffect(() => { if (ok) loadProducts(); }, [ok]);
+  useEffect(() => { if (ok) load(); }, [ok]);
 
   async function addProduct() {
     if (!name || !price) return setMsg("Name + Price required");
@@ -50,12 +41,12 @@ export default function AdminRoom() {
     if (error) return setMsg("Save failed: " + error.message);
     setMsg("✅ Product added!");
     setName(""); setPrice(""); setDesc(""); setFile(null);
-    loadProducts();
+    load();
   }
 
   async function del(id: string) {
     await supabase.from("products").delete().eq("id", id);
-    loadProducts();
+    load();
   }
 
   if (!ok) return (
@@ -75,7 +66,6 @@ export default function AdminRoom() {
       <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} className="mb-3" />
       <button onClick={addProduct} className="w-full bg-black text-white p-3 rounded font-bold">Add Product</button>
       {msg && <p className="mt-2 text-sm">{msg}</p>}
-
       <h2 className="text-xl font-bold mt-8 mb-2">Products ({products.length})</h2>
       {products.map(p => (
         <div key={p.id} className="flex justify-between items-center border p-2 rounded mb-2">
@@ -83,8 +73,7 @@ export default function AdminRoom() {
           <button onClick={() => del(p.id)} className="text-red-500 text-sm">Delete</button>
         </div>
       ))}
-
-      <h2 className="text-xl font-bold mt-8 mb-2">Sales / Orders ({orders.length})</h2>
+      <h2 className="text-xl font-bold mt-8 mb-2">Orders ({orders.length})</h2>
       {orders.map(o => (
         <div key={o.id} className="border p-2 rounded mb-2 text-sm">
           {o.buyer_name} - {o.product_name} - {o.amount_pi} Pi - {o.status}
