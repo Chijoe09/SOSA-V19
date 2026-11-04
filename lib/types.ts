@@ -2,6 +2,9 @@ export type Product = {
   id: string;
   name: string;
   price_pi: number;
+  pricePi?: number;
+  price?: number;
+  stock?: number;
   description?: string;
   image_url?: string;
   image?: string;
