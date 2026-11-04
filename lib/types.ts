@@ -15,3 +15,21 @@ export type Order = {
   status?: string;
   created_at?: string;
 };
+
+export type OrderRow = {
+  id: string;
+  created_at?: string;
+  phone?: string;
+  customer?: string;
+  buyer_name?: string;
+  productName?: string;
+  product_name?: string;
+  amount_pi?: number;
+  amount?: number;
+  deliveryType?: string;
+  delivery_type?: string;
+  payment?: string;
+  txid?: string;
+  status?: string;
+  [key: string]: any;
+};
