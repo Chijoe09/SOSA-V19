@@ -7,10 +7,18 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function AdminPage() {
+type Product = {
+  id: string;
+  name: string;
+  price_pi: number;
+  description?: string;
+  image_url?: string;
+};
+
+export default function AdminRoom() {
   const [pass, setPass] = useState("");
   const [ok, setOk] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -18,13 +26,14 @@ export default function AdminPage() {
   const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState("");
 
-  async function load() {
+  async function loadProducts() {
     const { data: p } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (p) setProducts(p);
+    if (p) setProducts(p as Product[]);
     const { data: o } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (o) setOrders(o);
   }
-  useEffect(() => { if (ok) load(); }, [ok]);
+
+  useEffect(() => { if (ok) loadProducts(); }, [ok]);
 
   async function addProduct() {
     if (!name || !price) return setMsg("Name + Price required");
@@ -41,12 +50,12 @@ export default function AdminPage() {
     if (error) return setMsg("Save failed: " + error.message);
     setMsg("✅ Product added!");
     setName(""); setPrice(""); setDesc(""); setFile(null);
-    load();
+    loadProducts();
   }
 
   async function del(id: string) {
     await supabase.from("products").delete().eq("id", id);
-    load();
+    loadProducts();
   }
 
   if (!ok) return (
@@ -54,7 +63,6 @@ export default function AdminPage() {
       <h1 className="text-2xl font-bold mb-4">SOSA Admin</h1>
       <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Admin Password" className="w-full p-3 border rounded mb-3 text-black" />
       <button onClick={() => pass ? setOk(true) : alert("Enter password")} className="w-full bg-black text-white p-3 rounded">Enter Admin</button>
-      <p className="text-xs mt-3 opacity-60">Use the password you set in Vercel ADMIN_PASSWORD</p>
     </div>
   );
 
@@ -76,7 +84,7 @@ export default function AdminPage() {
         </div>
       ))}
 
-      <h2 className="text-xl font-bold mt-8 mb-2">Orders ({orders.length})</h2>
+      <h2 className="text-xl font-bold mt-8 mb-2">Sales / Orders ({orders.length})</h2>
       {orders.map(o => (
         <div key={o.id} className="border p-2 rounded mb-2 text-sm">
           {o.buyer_name} - {o.product_name} - {o.amount_pi} Pi - {o.status}
