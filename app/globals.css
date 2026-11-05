@@ -56,3 +56,10 @@ body { margin: 0; font-family: system-ui, sans-serif; }
 .footSmall { font-size: 12px; opacity: 0.7; }
 .center { text-align: center; }
 .small { font-size: 13px; opacity: 0.8; }
+
+.cartTopRight { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; justify-content: flex-end; }
+.lastOrder { font-size: 12px; background: #222; padding: 6px 10px; border-radius: 20px; }
+.wrap.light .lastOrder { background: #eee; }
+.field { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #555; margin: 4px 0 10px; background: #222; color: #fff; }
+.wrap.light .field { background: #f3f3f3; color: #111; }
+.barcode { font-family: monospace; font-size: 18px; letter-spacing: 2px; background: #fff; color: #000; padding: 8px; text-align: center; border-radius: 6px; margin-top: 6px; }
