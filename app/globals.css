@@ -2,7 +2,8 @@
 body { margin: 0; font-family: system-ui, sans-serif; }
 .wrap.dark { background: #000; color: #fff; min-height: 100vh; }
 .wrap.light { background: #fff; color: #111; min-height: 100vh; }
-.header { padding: 14px; position: sticky; top: 0; z-index: 10; background: inherit; border-bottom: 1px solid #333; }
+.header { padding: 14px; position: relative; background: #000; border-bottom: 1px solid #333; }
+.wrap.light .header { background: #fff; }
 .topRow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .logo { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg,#2563eb,#f97316,#facc15,#ef4444); display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 12px; }
 .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; }
