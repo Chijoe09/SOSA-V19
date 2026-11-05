@@ -117,15 +117,56 @@ export default function Home() {
     return order;
   }
 
-  function payWithPi() {
-    // @ts-ignore
-    if (typeof window === "undefined" || !window.Pi) {
-      alert("Open this site inside Pi Browser to pay with Pi.\n\nYou are in Chrome. Pi Pay only works in Pi Browser.\n\nUse Barcode at Pickup instead, or open in Pi Browser.");
-      return;
-    }
-    const o = createOrder("Pi Pay");
-    if (o) { setCheckoutOpen(false); setCartOpen(false); alert("Pi Payment: " + o.totalPi.toFixed(2) + " Pi\nOrder: " + o.code + "\n\nPi SDK will call Pi.createPayment here. In Pi Browser this completes for real. Your order is saved in History."); }
+  async function payWithPi() {
+  if (cart.length === 0) { alert("Cart is empty"); return; }
+  // @ts-ignore
+  if (typeof window === "undefined" || !window.Pi) {
+    alert("Open this site inside Pi Browser to pay with Pi.");
+    return;
   }
+  // @ts-ignore
+  const Pi = window.Pi;
+  try { Pi.init({ version: "2.0", sandbox: true }); } catch(e) {}
+
+  const amount = Number(grandTotal.toFixed(2));
+  if (!amount || amount <= 0) { alert("Invalid total"); return; }
+
+  try {
+    // @ts-ignore
+    await Pi.authenticate(["username", "payments"], (payment: any) => {
+      // incomplete payment found - let Pi handle it
+      console.log("Incomplete payment", payment);
+    });
+
+    // @ts-ignore
+    await Pi.createPayment({
+      amount: amount,
+      memo: "SOSA Outfits order - " + cart.length + " item(s)",
+      metadata: { name: custName, phone: custPhone, deliveryType: deliveryType, address: custAddress, cart: cart.map((i: any) => i.name) }
+    }, {
+      onReadyForServerApproval: async (paymentId: string) => {
+        await fetch("/api/pi/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId })
+        });
+      },
+      onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+        await fetch("/api/pi/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId, txid })
+        });
+        const o = createOrder("Pi Pay - Paid");
+        if (o) { setCheckoutOpen(false); setCartOpen(false); alert("Payment Complete! Order " + o.code + " is Paid. Check History."); }
+      },
+      onCancel: () => { alert("Payment cancelled"); },
+      onError: (e: any) => { alert("Payment error: " + (e?.message || "Unknown")); }
+    });
+  } catch (e: any) {
+    alert("Pi payment failed: " + (e?.message || "Cancelled"));
+  }
+}
   function payWithBarcode() {
     const o = createOrder("Barcode");
     if (o) { setCheckoutOpen(false); setCartOpen(false); setHistoryOpen(true); alert("Barcode Order Created!\n\nCode: " + o.code + "\nTotal: " + o.totalPi.toFixed(2) + " Pi\nShow this code at pickup.\nStatus: Pending - Pay on Pickup"); }
