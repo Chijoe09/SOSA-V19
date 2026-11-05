@@ -49,7 +49,6 @@ export default function Home() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  // Checkout form - ALSO REMEMBERED
   const [custName, setCustName] = useState("");
   const [custPhone, setCustPhone] = useState("");
   const [custAddress, setCustAddress] = useState("");
@@ -57,7 +56,6 @@ export default function Home() {
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
   const [loaded, setLoaded] = useState(false);
 
-  // ===== LAST HISTORY MEMORY - LOAD ONCE =====
   useEffect(() => {
     try {
       const c = localStorage.getItem("sosa-cart-v20"); if (c) setCart(JSON.parse(c));
@@ -75,7 +73,6 @@ export default function Home() {
     } catch {}
     setLoaded(true);
   }, []);
-  // ===== SAVE EVERY CHANGE - NEVER LOSE HISTORY =====
   useEffect(() => { if (loaded) localStorage.setItem("sosa-cart-v20", JSON.stringify(cart)); }, [cart, loaded]);
   useEffect(() => { if (loaded) localStorage.setItem("sosa-dark", dark ? "1" : "0"); }, [dark, loaded]);
   useEffect(() => { if (loaded) localStorage.setItem("sosa-cat", cat); }, [cat, loaded]);
@@ -116,7 +113,7 @@ export default function Home() {
     const order: Order = { code, date: new Date().toLocaleString(), name: custName, phone: custPhone, address: deliveryType === "delivery" ? custAddress : "Pickup: No.1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.", deliveryType, items: cart, totalPi: grandTotal, method, status: method === "Barcode" ? "Pending - Pay on Pickup" : "Paid - Preparing" };
     const newOrders = [order, ...orders];
     setOrders(newOrders); setLastOrder(order);
-    setCart([]); // clear cart ONLY after order saved - history keeps order
+    setCart([]);
     return order;
   }
 
@@ -134,7 +131,7 @@ export default function Home() {
     if (o) { setCheckoutOpen(false); setCartOpen(false); setHistoryOpen(true); alert("Barcode Order Created!\n\nCode: " + o.code + "\nTotal: " + o.totalPi.toFixed(2) + " Pi\nShow this code at pickup.\nStatus: Pending - Pay on Pickup"); }
   }
   function shareApp() {
-    const url = "https://sosa-v20.vercel.app"; const text = "SOSA-outfits - Sophisticated Samples. Made in Nigeria. " + url;
+    const url = "https://sosa-v19-nqkiejyop-chijoe09.vercel.app/"; const text = "SOSA-outfits - Sophisticated Samples. Made in Nigeria. " + url;
     if (navigator.share) navigator.share({ title: "SOSA-outfits", text, url }).catch(() => {});
     else { navigator.clipboard?.writeText(url); alert("Link copied: " + url); }
   }
@@ -148,7 +145,6 @@ export default function Home() {
 
   return (
     <div className={dark ? "wrap dark" : "wrap light"}>
-      {/* HEADER - CART ALWAYS TOP RIGHT */}
       <header className="header">
         <div className="topRow">
           <div className="logo">SOSA</div>
@@ -161,7 +157,6 @@ export default function Home() {
             <button onClick={() => setAdminOpen(true)}>⚙️ Admin</button>
           </div>
         </div>
-        {/* CART RECORDS TOP RIGHT - NEVER HIDDEN */}
         <div className="cartTopRight">
           <button className="cartBtn" onClick={() => setCartOpen(true)}>🛒 Cart ({totalQty}) - {totalPi.toFixed(2)} Pi</button>
           {lastOrder && <span className="lastOrder">Last: {lastOrder.code} - {lastOrder.status}</span>}
@@ -219,13 +214,15 @@ export default function Home() {
           <div className="chips"><button className={deliveryType === "pickup" ? "chip active" : "chip"} onClick={() => setDeliveryType("pickup")}>📦 Self Pickup - Free</button><button className={deliveryType === "delivery" ? "chip active" : "chip"} onClick={() => setDeliveryType("delivery")}>🚚 Delivery - 0.0001 Pi</button></div>
           {deliveryType === "pickup" && <p className="small">📦 Pickup: No.1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>}
           {deliveryType === "delivery" && <p className="small">🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 outside)</p>}
-          <label className="label">Name *</label><input className="field" placeholder="Your full name" value={custName} onChange={e => setCustName(e.target.value)} />
-          <label className="label">Phone *</label><input className="field" type="tel" inputMode="numeric" placeholder="e.g. 08087259800" value={custPhone} onChange={e => setCustPhone(e.target.value)} />
-          {deliveryType === "delivery" && (<><label className="label">Delivery Address *</label><input className="field" placeholder="Street, Area, Lagos" value={custAddress} onChange={e => setCustAddress(e.target.value)} /></>)}
-          <h3>Items: {totalQty} | Products: {totalPi.toFixed(2)} Pi<br />Delivery: {deliveryFee.toFixed(4)} Pi<br />Grand Total: {grandTotal.toFixed(2)} Pi</h3>
+          <label className="label">Name</label><input className="input" placeholder="Your Name" value={custName} onChange={e => setCustName(e.target.value)} />
+          <label className="label">Phone</label><input className="input" placeholder="080..." value={custPhone} onChange={e => setCustPhone(e.target.value)} />
+          <label className="label">Phone</label><input className="input" placeholder="080..." value={custPhone} onChange={e => setCustPhone(e.target.value)} />
+          {deliveryType === "delivery" && (<><label className="label">Delivery Address</label><input className="input" placeholder="Street, Area, Lagos" value={custAddress} onChange={e => setCustAddress(e.target.value)} /></>)}
+          <h3>Items: {totalQty} | Products: {cart.map(i => i.name + " x" + i.qty).join(", ")}</h3>
+          <h3>Grand Total: {grandTotal.toFixed(2)} Pi</h3>
           <button className="addBtn full" onClick={payWithPi}>Pay with Pi - {grandTotal.toFixed(2)} Pi</button>
-          <button className="addBtn full ghost" onClick={payWithBarcode}>Pay with Barcode at Pickup - {grandTotal.toFixed(2)} Pi</button>
-          <p className="small">Barcode: You get SOSA-XXXXXX code. Show it at pickup. Admin scans it.</p>
+          <button className="addBtn full" onClick={payWithBarcode}>Pay with Barcode at Pickup - {grandTotal.toFixed(2)} Pi</button>
+          <p className="small">Barcode: You will get a real SOSA-XXXXXX code after you tap above. Show it at pickup. Admin scans it.</p>
         </div></div>
       )}
 
@@ -233,38 +230,40 @@ export default function Home() {
         <div className="modalBg" onClick={() => setHistoryOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
           <button className="close" onClick={() => setHistoryOpen(false)}>✕</button>
           <h2>📦 Order History - Last Memory</h2>
-          {orders.length === 0 && <p>No orders yet. {lastOrder ? "Last: " + lastOrder.code : ""}</p>}
+          {lastOrder && <p>Last Order: {lastOrder.code} - {lastOrder.status}</p>}
+          {orders.length === 0 && <p>No orders yet.</p>}
           {orders.map(o => (
-            <div key={o.code} className="cartLine"><div><b>{o.code}</b> - {o.date}<br />{o.name} - {o.phone}<br />{o.deliveryType} - {o.method} - {o.status}<br />Items: {o.items.map(i => i.name + " x" + i.qty).join(", ")}<br /><b>Total: {o.totalPi.toFixed(2)} Pi</b></div>
-            <div className="barcode">||||| {o.code} |||||</div><div>Barcode: {o.code} - Show at pickup</div></div>
+            <div key={o.code} className="orderCard">
+              <div><b>{o.code}</b> - {o.status} - {o.method}</div>
+              <div>{o.date} - {o.name} - {o.phone} - {o.deliveryType}</div>
+              <div>Items: {o.items.map(i => i.name + " x" + i.qty).join(", ")}</div>
+              <div>Total: {o.totalPi.toFixed(2)} Pi</div>
+              <div className="barcode">||||| {o.code} |||||</div>
+              <div style={{fontSize: "12px", textAlign: "center"}}>{o.code}</div>
+            </div>
           ))}
-          {orders.length > 0 && <button className="addBtn ghost" onClick={() => { if (confirm("Clear all history?")) { setOrders([]); setLastOrder(null); localStorage.removeItem("sosa-orders-v20"); localStorage.removeItem("sosa-last-order"); } }}>Clear History</button>}
+          {orders.length > 0 && <button className="addBtn" onClick={() => { if (confirm("Clear all history?")) { setOrders([]); setLastOrder(null); localStorage.removeItem("sosa-orders-v20"); localStorage.removeItem("sosa-last-order"); } }}>Clear History</button>}
         </div></div>
       )}
 
       {adminOpen && (
         <div className="modalBg" onClick={() => setAdminOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
           <button className="close" onClick={() => setAdminOpen(false)}>✕</button>
-          <h2>⚙️ Admin Control Room</h2>
-          <p>Total Orders: {orders.length} | Total Pi Sold: {orders.reduce((s, o) => s + o.totalPi, 0).toFixed(2)} Pi</p>
-          <h3>Scan Barcode / Order Code</h3><input className="field" placeholder="Scan or type SOSA-XXXXXX" value={trackCode} onChange={e => setTrackCode(e.target.value)} />
-          <button className="addBtn" onClick={() => { const f = orders.find(o => o.code.toLowerCase() === trackCode.trim().toLowerCase()); if (f) alert("Found: " + f.code + " - " + f.status + " - " + f.totalPi.toFixed(2) + " Pi"); else alert("Not found: " + trackCode); }}>Find Order</button>
-          <h3>All Orders</h3>
-          {orders.map(o => (<div key={o.code} className="cartLine"><b>{o.code}</b> - {o.name} - {o.phone} - {o.totalPi.toFixed(2)} Pi - {o.status}<br /><button className="addBtn" onClick={() => setOrders(prev => prev.map(x => x.code === o.code ? { ...x, status: "Delivered" } : x))}>Mark Delivered</button><button className="addBtn ghost" onClick={() => setOrders(prev => prev.map(x => x.code === o.code ? { ...x, status: "Picked Up" } : x))}>Mark Picked Up</button></div>))}
-          {orders.length === 0 && <p>No orders yet.</p>}
+          <h2>⚙️ Admin - All Orders</h2>
+          <p>Total Orders: {orders.length}</p>
+          <input className="input" placeholder="Track by code or phone..." value={trackCode} onChange={e => setTrackCode(e.target.value)} />
+          <button className="addBtn" onClick={doTrack}>Track Order</button>
+          {trackResult && <p>{trackResult}</p>}
+          {orders.map(o => (
+            <div key={o.code} className="orderCard">
+              <div><b>{o.code}</b> - {o.status}</div>
+              <div>{o.name} - {o.phone} - {o.address}</div>
+              <div>{o.items.map(i => i.name + " x" + i.qty).join(", ")} - {o.totalPi.toFixed(2)} Pi</div>
+              <div className="barcode">||||| {o.code} |||||</div>
+            </div>
+          ))}
         </div></div>
       )}
-
-      <section className="track"><h3>📦 Delivery Tracking</h3><div className="trackRow"><input placeholder="Enter Phone or Order Code e.g. SOSA-123456" value={trackCode} onChange={e => setTrackCode(e.target.value)} /><button onClick={doTrack}>Track</button></div>{trackResult && <p>{trackResult}</p>}{lastOrder && <p className="small">Last order: {lastOrder.code} - {lastOrder.status} - {lastOrder.totalPi.toFixed(2)} Pi</p>}</section>
-
-      <footer className="footer">
-        <h3>Follow Us</h3><div className="socials"><a href="#" onClick={e => e.preventDefault()}>Instagram</a><a href="#" onClick={e => e.preventDefault()}>Facebook</a><a href="#" onClick={e => e.preventDefault()}>X</a><a href="#" onClick={e => e.preventDefault()}>TikTok</a><a href="#" onClick={e => e.preventDefault()}>Telegram</a></div>
-        <p>WhatsApp: <a href="https://wa.me/2348087259800">+2348087259800</a> | Email: <a href="mailto:sophisticatedsamples@gmail.com">sophisticatedsamples@gmail.com</a></p>
-        <p>Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p><p>Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</p>
-        <div className="footBtns"><button onClick={shareApp}>Share App</button><button onClick={() => window.open("https://www.google.com/maps/search/?api=1&query=ODICHE+STREET+COKER+Aguda+ORILE+LAGOS", "_blank")}>Sosa Map</button><button onClick={() => window.open("https://sosa.pi/outfits", "_blank")}>Map Of Pi</button></div>
-        <p className="footSmall">SOPHISTICATED SAMPLES MERCHANDISE · BN 2229053 · CRBN 177764 · http://sosa.pi</p>
-        <p className="footSmall"><a href="https://sosa-v20.vercel.app">https://sosa-v20.vercel.app</a> | <a href="https://sosa.pi/outfits">sosa.pi/outfits</a></p>
-      </footer>
     </div>
   );
-}
+                                                                                                                                                                                                                                                                                                                                     }
