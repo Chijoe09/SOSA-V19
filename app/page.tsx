@@ -126,7 +126,7 @@ export default function Home() {
   }
   // @ts-ignore
   const Pi = window.Pi;
-  try { Pi.init({ version: "2.0", sandbox: true }); } catch(e) {}
+  try { Pi.init({ version: "2.0", sandbox:false }); } catch(e) {}
 
   const amount = Number(grandTotal.toFixed(2));
   if (!amount || amount <= 0) { alert("Invalid total"); return; }
