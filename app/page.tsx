@@ -134,8 +134,11 @@ export default function Home() {
   try {
     // @ts-ignore
     await Pi.authenticate(["username", "payments"], (payment: any) => {
-      // incomplete payment found - let Pi handle it
-      console.log("Incomplete payment", payment);
+    fetch("/api/pi/incomplete", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction?.txid })
+);
     });
 
     // @ts-ignore
