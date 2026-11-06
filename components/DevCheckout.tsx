@@ -11,16 +11,22 @@ export default function DevCheckout({ lines, onDone }: { lines: CartLine[]; onDo
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [msg, setMsg] = useState("");
-  const isDelivery = deliveryType === "delivery";
+  const isDelivery = deliveryType === "pickup" ? false : true;
   const total = cartTotal(lines, isDelivery);
 
-  useEffect(() => { window.Pi?.init({ version: "2.0", sandbox: false }); }, []);
+  useEffect(() => { window.Pi?.init({ version: "2.0", sandbox: true }); }, []);
 
   const pay = async () => {
     if (!name.trim() || !phone.trim() || (isDelivery && !address.trim())) { setMsg("Please fill all required details"); return; }
     if (!window.Pi) { setMsg("Open in Pi Browser to pay"); return; }
     try {
-      await window.Pi.authenticate(["username", "payments"], () => {});
+      await window.Pi.authenticate(["username", "payments"], (payment: any) => {
+        fetch("/api/pi/incomplete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction?.txid })
+        });
+      });
       const orderId = Date.now().toString();
       const order: OrderRow = {
         paymentId: "", txid: "", customerName: name.trim(), phone: phone.trim(),
@@ -41,6 +47,13 @@ export default function DevCheckout({ lines, onDone }: { lines: CartLine[]; onDo
           },
           onCancel: () => setMsg("Payment cancelled"),
           onError: (e) => setMsg("Payment error: " + e.message),
+          onIncompletePaymentFound: (payment: any) => {
+            fetch("/api/pi/incomplete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction?.txid })
+            });
+          },
         }
       );
     } catch (e) { setMsg(e instanceof Error ? e.message : "Payment failed"); }
