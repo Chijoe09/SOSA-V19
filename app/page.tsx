@@ -207,11 +207,26 @@ export default function Home() {
         </div>
         <input className="search" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
         <div className="catBar">
-          <button className="arrow" onClick={() => setCatIndex(Math.max(0, catIndex - 5))}>{"<< -10"}</button>
-          <div className="catScroll">{visibleCats.map(c => (<button key={c} className={cat === c ? "pill active" : "pill"} onClick={() => setCat(c)}>{c}</button>))}</div>
-          <button className="arrow" onClick={() => setCatIndex(Math.min(CATEGORIES.length - 5, catIndex + 5))}>{"+14 >>"}</button>
-        </div>
-      </header>
+          <div className="catBar">
+  <button className="arrow" disabled={catIndex===0} onClick={()=>setCatIndex(i=>Math.max(0,i-5))}>{"<< Prev"}</button>
+
+  <div style={{flex:1, textAlign:"center"}}>
+    <div style={{fontWeight:800, fontSize:14, color:"#fff"}}>
+      Page {Math.floor(catIndex/5)+1} of {Math.ceil(CATEGORIES.length/5)} • {Math.ceil(CATEGORIES.length/5)-(Math.floor(catIndex/5)+1)} pages left to view
+    </div>
+    <div style={{height:6, background:"#333", borderRadius:99, overflow:"hidden", marginTop:4}}>
+      <div style={{width:`${((Math.floor(catIndex/5)+1)/Math.ceil(CATEGORIES.length/5))*100}%`, height:"100%", background:"#ff7a00"}} />
+    </div>
+  </div>
+
+  <button className="arrow" disabled={catIndex+5>=CATEGORIES.length} onClick={()=>setCatIndex(i=>Math.min(CATEGORIES.length-5,i+5))}>{"Next >>"}</button>
+</div>
+
+<div className="catScroll">
+  {CATEGORIES.slice(catIndex, catIndex+5).map(c=>(
+    <button key={c} className={cat===c?"pill active":"pill"} onClick={()=>setCat(c)}>{c}</button>
+  ))}
+</div>
 
       <main className="grid">
         {filtered.map(p => (
