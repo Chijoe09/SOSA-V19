@@ -326,7 +326,15 @@ export default function Home() {
       {adminOpen && (
         <div className="modalBg" onClick={() => setAdminOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
           <button className="close" onClick={() => setAdminOpen(false)}>✕</button>
-          <h2>⚙️ Admin - All Orders</h2>
+          <h2>⚙️ Admin - All Orders</h2><div style={{background:"#222", padding:10, borderRadius:10, margin:"10px 0"}}>
+  <label className="label">Categories Per Page - controls total pages</label>
+  <input className="input" type="number" value={catsPerPage} onChange={(e)=>{
+    const v = parseInt(e.target.value)||1;
+    setCatsPerPage(v);
+    setCatIndex(0);
+  }} />
+  <p className="small">Now: {CATEGORIES.length} categories / {catsPerPage} per page = {Math.ceil(CATEGORIES.length/catsPerPage)} pages total</p>
+</div>
           <p>Total Orders: {orders.length}</p>
           <input className="input" placeholder="Track by code or phone..." value={trackCode} onChange={e => setTrackCode(e.target.value)} />
           <button className="addBtn" onClick={doTrack}>Track Order</button>
