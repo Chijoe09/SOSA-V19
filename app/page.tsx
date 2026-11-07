@@ -36,7 +36,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState("All");
   const [catIndex, setCatIndex] = useState(0);
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(true);const [catsPerPage, setCatsPerPage] = useState(5);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
