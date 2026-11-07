@@ -252,23 +252,41 @@ export default function Home() {
       )}
 
       {checkoutOpen && (
-        <div className="modalBg" onClick={() => setCheckoutOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
-          <button className="close" onClick={() => setCheckoutOpen(false)}>✕</button>
-          <h2>Checkout</h2>
-          <div className="chips"><button className={deliveryType === "pickup" ? "chip active" : "chip"} onClick={() => setDeliveryType("pickup")}>📦 Self Pickup - Free</button><button className={deliveryType === "delivery" ? "chip active" : "chip"} onClick={() => setDeliveryType("delivery")}>🚚 Delivery - 0.0001 Pi</button></div>
-          {deliveryType === "pickup" && <p className="small">📦 Pickup: No.1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>}
-          {deliveryType === "delivery" && <p className="small">🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 outside)</p>}
-          <label className="label">Name</label><input className="input" placeholder="Your Name" value={custName} onChange={e => setCustName(e.target.value)} />
-          <label className="label">Phone</label><input className="input" placeholder="080..." value={custPhone} onChange={e => setCustPhone(e.target.value)} />
-          <label className="label">Phone</label><input className="input" placeholder="080..." value={custPhone} onChange={e => setCustPhone(e.target.value)} />
-          {deliveryType === "delivery" && (<><label className="label">Delivery Address</label><input className="input" placeholder="Street, Area, Lagos" value={custAddress} onChange={e => setCustAddress(e.target.value)} /></>)}
-          <h3>Items: {totalQty} | Products: {cart.map(i => i.name + " x" + i.qty).join(", ")}</h3>
-          <h3>Grand Total: {grandTotal.toFixed(2)} Pi</h3>
-          <button className="addBtn full" onClick={payWithPi}>Pay with Pi - {grandTotal.toFixed(2)} Pi</button>
-          <button className="addBtn full" onClick={payWithBarcode}>Pay with Barcode at Pickup - {grandTotal.toFixed(2)} Pi</button>
-          <p className="small">Barcode: You will get a real SOSA-XXXXXX code after you tap above. Show it at pickup. Admin scans it.</p>
-        </div></div>
-      )}
+<div className="modalBg" onClick={()=>setCheckoutOpen(false)}>
+<div className="modal" onClick={(e)=>e.stopPropagation()}>
+<button className="close" onClick={()=>setCheckoutOpen(false)}>X</button>
+<h2>Checkout</h2>
+
+<div className="chips">
+<button className={deliveryType==="pickup" ? "chip active" : "chip"} onClick={()=>setDeliveryType("pickup")}>📦 Self Pickup - Free</button>
+<button className={deliveryType==="delivery" ? "chip active" : "chip"} onClick={()=>setDeliveryType("delivery")}>🚚 Delivery - 0.0001 Pi</button>
+</div>
+
+{deliveryType==="pickup" && <p>📦 Pickup: No.1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>}
+{deliveryType==="delivery" && <p>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 outside)</p>}
+
+<label className="label">Name</label>
+<input className="input" placeholder="Your Name" value={custName} onChange={(e)=>setCustName(e.target.value)} autoComplete="name" />
+
+<label className="label">Phone</label>
+<input className="input" placeholder="080..." value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g,""))} type="tel" inputMode="tel" autoComplete="tel" maxLength={11} />
+
+{deliveryType==="delivery" && (
+<>
+<label className="label">Delivery Address</label>
+<input className="input" placeholder="Street, Area, Lagos" value={custAddress} onChange={(e)=>setCustAddress(e.target.value)} autoComplete="street-address" />
+</>
+)}
+
+<h3>Items: {totalQty} | Products: {cart.map(i=>i.name+" x"+i.qty).join(", ")}</h3>
+<h3>Grand Total: {grandTotal} Pi</h3>
+<button className="addBtn" onClick={payWithPi}>Pay with Pi - {grandTotal} Pi</button>
+<button className="addBtn" onClick={payWithBarcode}>Pay with Barcode at Pickup - {grandTotal} Pi</button>
+<p className="small">Barcode: You will get a real SOSA-XXXXXX code after you tap above. Show it at pickup. Admin scans it.</p>
+
+</div>
+</div>
+)}
 
       {historyOpen && (
         <div className="modalBg" onClick={() => setHistoryOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
