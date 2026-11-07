@@ -132,13 +132,13 @@ export default function Home() {
   if (!amount || amount <= 0) { alert("Invalid total"); return; }
 
   try {
-    // @ts-ignore
+        // @ts-ignore
     await Pi.authenticate(["username", "payments"], (payment: any) => {
-    fetch("/api/pi/incomplete", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction?.txid })
-);
+      fetch("/api/pi/incomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction?.txid }),
+      });
     });
 
     // @ts-ignore
