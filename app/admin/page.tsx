@@ -33,13 +33,24 @@ export default function AdminPage() {
     setName(""); setPrice(""); setDesc(""); setFile(null);
     load();
   }
-  if (!ok) return (
-    <div className="max-w-sm mx-auto p-6 mt-20">
-      <h1 className="text-2xl font-bold mb-4">SOSA Admin</h1>
-      <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Admin Password" className="w-full p-3 border rounded mb-3 text-black" />
-      <button onClick={() => pass ? setOk(true) : alert("Enter password")} className="w-full bg-black text-white p-3 rounded">Enter Admin</button>
-    </div>
-  );
+  if (!authed) return (
+  <div style={{padding: 20, maxWidth: 400, margin: '40px auto'}}>
+    <h1 style={{fontSize: 28, fontWeight: 'bold'}}>sossa Admin</h1>
+    <form onSubmit={(e)=>{e.preventDefault(); if(pass) setAuthed(true);}}>
+      <input
+        type="password"
+        autoFocus
+        value={pass}
+        onChange={(e)=>setPass(e.target.value)}
+        placeholder="Admin Password"
+        style={{width: '100%', padding: 16, fontSize: 18, border: '2px solid black', borderRadius: 8, marginTop: 16, marginBottom: 12}}
+      />
+      <button type="submit" style={{width: '100%', padding: 16, fontSize: 18, background: 'black', color: 'white', borderRadius: 8}}>
+        Enter Admin
+      </button>
+    </form>
+  </div>
+);
   return (
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Add Product</h1>
