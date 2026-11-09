@@ -32,7 +32,6 @@ export default function AdminPage() {
     setMsg("✅ Product added!");
     setName(""); setPrice(""); setDesc(""); setFile(null);
     load();
-  }
   if (!ok) return (
   <div style={{padding: 20, maxWidth: 400, margin: '40px auto'}}>
     <h1 style={{fontSize: 28, fontWeight: 'bold'}}>sossa Admin</h1>
