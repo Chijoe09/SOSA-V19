@@ -207,7 +207,6 @@ export default function Home() {
         </div>
         <input className="search" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
         <div className="catBar">
-          <div className="catBar">
   <button className="arrow" disabled={catIndex===0} onClick={()=>setCatIndex(i=>Math.max(0,i-5))}>{"<< Prev"}</button>
 
   <div style={{flex:1, textAlign:"center"}}>
@@ -227,7 +226,7 @@ export default function Home() {
     <button key={c} className={cat===c?"pill active":"pill"} onClick={()=>setCat(c)}>{c}</button>
   ))}
 </div>
-
+</header>
       <main className="grid">
         {filtered.map(p => (
           <div key={p.id} className="card">
