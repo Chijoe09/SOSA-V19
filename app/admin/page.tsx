@@ -30,7 +30,7 @@ export default function AdminPage() {
     const { error } = await supabase.from("products").insert([{ name, price_pi: parseFloat(price), description: desc, image_url }]);
     if (error) return setMsg("Save failed: " + error.message);
     setMsg("✅ Product added!");
-    setName(""); setPrice(""); setDesc(""); setFile(null);
+    setName(""); setPrice(""); setDesc(""); setFile(null);}
     load();
   if (!ok) return (
   <div style={{padding: 20, maxWidth: 400, margin: '40px auto'}}>
