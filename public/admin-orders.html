@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>https://fuyvqsrbwbugbhjjjhet.supabase.co
+<head>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1eXZxc3Jid2J1Z2JoampqaGV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDY5NDMsImV4cCI6MjEwODc4Mjk0M30.Syl_rGHBVLXFFI1x18bBT9VlywTIelfPMnhE3PLuEtM
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orders - Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:sans-serif;padding:16px;background:#f6f6f6}
+.card{background:#fff;padding:14px;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+button{padding:8px 12px;border-radius:8px;border:0;background:#000;color:#fff;margin-right:6px}
+select{padding:8px;border-radius:8px}
+</style>
+</head>
+<body>
+<h2>Orders</h2>
+<button onclick="loadOrders()">Refresh</button>
+<div id="list">Loading...</div>
+<script>
+const supabaseUrl = "PASTE YOURS";
+const supabaseKey = "PASTE YOURS";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+async function loadOrders(){
+  const { data, error } = await supabase.from('orders').select('*').order('created_at',{ascending:false});
+  if(error){ document.getElementById('list').innerHTML = error.message; return; }
+  if(!data.length){ document.getElementById('list').innerHTML = "<p>No orders yet.</p>"; return; }
+  document.getElementById('list').innerHTML = data.map(o => `
+    <div class="card">
+      <b>#${o.id} - ${o.customer_name}</b><br>
+      📞 ${o.customer_phone}<br>
+      📍 ${o.customer_addr}<br>
+      🛍️ ${o.items}<br>
+      💰 Total: ${o.total} Pi | ${o.delivery_mode}<br>
+      TX: ${o.txid}<br>
+      Status: <b>${o.status}</b><br><br>
+      <select id="st-${o.id}">
+        <option>Paid</option><option>Supplied</option><option>Delivered</option>
+      </select>
+      <button onclick="updateStatus(${o.id})">Update Status</button>
+    </div>`).join('');
+}
+async function updateStatus(id){
+  const status = document.getElementById('st-'+id).value;
+  await supabase.from('orders').update({status}).eq('id', id);
+  loadOrders();
+}
+loadOrders();
+</script>
+</body>
+  </html>
