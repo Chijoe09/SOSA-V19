@@ -66,7 +66,7 @@ export default function AdminPage() {
           <span>{p.name} - {p.price_pi} Pi</span>
           <button onClick={async () => { await supabase.from("products").delete().eq("id", p.id); load(); }} className="text-red-500 text-sm">Delete</button>
         </div>
-      ))}
+         ))} 
     </div>
   );
 }
