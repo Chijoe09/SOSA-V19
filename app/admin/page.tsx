@@ -36,7 +36,7 @@ export default function AdminPage() {
   if (!ok) return (
   <div style={{padding: 20, maxWidth: 400, margin: '40px auto'}}>
     <h1 style={{fontSize: 28, fontWeight: 'bold'}}>sossa Admin</h1>
-    <form onSubmit={(e)=>{e.preventDefault(); if(pass) setAuthed(true);}}>
+    <form onSubmit={(e)=>{e.preventDefault(); if(pass) setok(true);}}>
       <input
         type="password"
         autoFocus
