@@ -199,7 +199,7 @@ export default function Home() {
             <button onClick={() => { const r = prompt("Rate us 1-5 stars"); if (r) setRating(parseInt(r) || 0); }}>⭐ Rate {rating ? rating + "/5" : ""}</button>
             <button onClick={shareApp}>↗ Share</button>
             <button onClick={() => setHistoryOpen(true)}>📦 History ({orders.length})</button>
-            <button onClick={() => setAdminOpen(true)}>⚙️ Admin</button>
+            <button style={{display: window.location.search.includes("admin=sosa5463") ? "inline-block" : "none"}} onClick={()=>{ if(prompt("Enter Admin PIN")==="sosa5463"){ setAdminOpen(true) } else { alert("Wrong PIN") } }}>⚙️ Admin</button>
           </div>
         </div>
         <div className="cartTopRight">
