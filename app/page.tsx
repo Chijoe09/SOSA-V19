@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import AdminAddProducts from "@/components/AdminAddProducts";  <-- NEW, add this
+import AdminAddProducts from "@/components/AdminAddProducts";  import AdminAddProducts from "@/components/AdminAddProducts";
 
 type Product = { id: string; name: string; pricePi: number; category: string; stock: number; colours: string[]; sizes: string[]; imageText: string };
 const PRODUCTS: Product[] = [
