@@ -187,7 +187,6 @@ export default function Home() {
     else if (lastOrder && (lastOrder.code.toLowerCase() === q || lastOrder.phone === trackCode.trim())) setTrackResult("Order " + lastOrder.code + " - " + lastOrder.status);
     else setTrackResult(trackCode ? "No order found for " + trackCode + ". Check code or phone. Your last order: " + (lastOrder ? lastOrder.code + " - " + lastOrder.status : "none yet") : "Enter your order code");
   }
-
   return (
     <div className={dark ? "wrap dark" : "wrap light"}>
       <header className="header">
