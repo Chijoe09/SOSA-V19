@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import AdminAddProducts from "@/components/AdminAddProducts";  <-- NEW, add this
 
 type Product = { id: string; name: string; pricePi: number; category: string; stock: number; colours: string[]; sizes: string[]; imageText: string };
 const PRODUCTS: Product[] = [
@@ -326,6 +327,7 @@ export default function Home() {
         <div className="modalBg" onClick={() => setAdminOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
           <button className="close" onClick={() => setAdminOpen(false)}>✕</button>
           <h2>⚙️ Admin - All Orders</h2><div style={{background:"#222", padding:10, borderRadius:10, margin:"10px 0"}}>
+            <AdminAddProducts onSaved={() => window.location.reload()} />
   <label className="label">Categories Per Page - controls total pages</label>
   <input className="input" type="number" value={catsPerPage} onChange={(e)=>{
     const v = parseInt(e.target.value)||1;
