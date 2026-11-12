@@ -1,71 +1,69 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-export default function AdminPage() {
-  const [ok, setOk] = useState(false);
+export default function Admin() {
   const [pass, setPass] = useState("");
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [desc, setDesc] = useState("");
-  const [file, setFile] = useState<any>(null);
-  const [msg, setMsg] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [pName, setPName] = useState("");
+  const [pPrice, setPPrice] = useState("");
+  const [pDesc, setPDesc] = useState("");
 
-  async function load() {
-    const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (data) setProducts(data);
-  }
+  useEffect(() => {
+    setOrders(JSON.parse(localStorage.getItem("sosa_orders") || "[]"));
+    setProducts(JSON.parse(localStorage.getItem("sosa_products") || "[]"));
+  }, []);
 
-  useEffect(() => { if (ok) load(); }, [ok]);
-
-  async function addProduct() {
-    if (!name || !price) return setMsg("Enter name and price");
-    setMsg("Uploading...");
-    let image_url = "";
-    if (file) {
-      const fname = Date.now() + "-" + file.name.replace(/\s/g, "-");
-      const { error: uploadError } = await supabase.storage.from("sosa-products").upload(fname, file);
-      if (uploadError) return setMsg("Upload failed: " + uploadError.message);
-      const { data } = supabase.storage.from("sosa-products").getPublicUrl(fname);
-      image_url = data.publicUrl;
-    }
-    const { error: saveError } = await supabase.from("products").insert([{ name, price_pi: parseFloat(price), description: desc, image_url }]);
-    if (saveError) return setMsg("Save failed: " + saveError.message);
-    setMsg("Product added!");
-    setName(""); setPrice(""); setDesc(""); setFile(null);
-    load();
-  }
-
-  if (!ok) return (
-    <div style={{ padding: 20, maxWidth: 400, margin: "40px auto" }}>
-      <h1 style={{ fontSize: 28, fontWeight: "bold" }}>SOSA Admin</h1>
-      <form onSubmit={(e) => { e.preventDefault(); if (pass) setOk(true); }}>
-        <input type="password" autoFocus value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Admin Password" style={{ width: "100%", padding: 16, fontSize: 18, border: "2px solid black", borderRadius: 8 }} />
-        <button type="submit" style={{ width: "100%", padding: 16, marginTop: 12, background: "black", color: "white", borderRadius: 8 }}>Enter Admin</button>
-      </form>
+  if (!unlocked) return (
+    <div style={{ padding: 20 }}>
+      <h1>SOSA Admin</h1>
+      <input type="password" placeholder="Admin Password" value={pass} onChange={e => setPass(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 10, marginBottom: 10 }} />
+      <button onClick={() => { if (pass) setUnlocked(true); }} style={{ width: "100%", padding: 14, background: "#000", color: "#fff", borderRadius: 10 }}>Enter Admin</button>
     </div>
   );
 
+  const totalPi = orders.reduce((a, o) => a + Number(o.total || 0), 0);
+
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-      <h1>Add Product</h1>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Product name" style={{ width: "100%", padding: 12, marginBottom: 12 }} />
-      <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Price in Pi" style={{ width: "100%", padding: 12, marginBottom: 12 }} />
-      <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description" style={{ width: "100%", padding: 12, marginBottom: 12 }} />
-      <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ marginBottom: 12 }} />
-      <button onClick={addProduct} style={{ width: "100%", padding: 16, background: "black", color: "white", borderRadius: 8 }}>Add Product</button>
-      <p>{msg}</p>
-      {products.map((p: any) => (
-        <div key={p.id} style={{ border: "1px solid #ddd", padding: 12, marginTop: 12, borderRadius: 8 }}>
-          <b>{p.name}</b> - {p.price_pi} Pi
+    <div style={{ padding: 16, background: "#fff", minHeight: "100vh" }}>
+      <h1>SOSA Admin - History</h1>
+      <a href="/">← Back to Shop</a>
+
+      <div style={{ display: "flex", gap: 10, margin: "16px 0" }}>
+        <div style={{ flex: 1, background: "#000", color: "#fff", padding: 14, borderRadius: 12 }}><b>Total Records</b><h2 style={{ margin: 0 }}>{orders.length}</h2><small>Orders</small></div>
+        <div style={{ flex: 1, background: "orange", padding: 14, borderRadius: 12 }}><b>Total Pi</b><h2 style={{ margin: 0 }}>{totalPi.toFixed(4)}</h2><small>Test-Pi Collected</small></div>
+        <div style={{ flex: 1, background: "#eee", padding: 14, borderRadius: 12 }}><b>Products</b><h2 style={{ margin: 0 }}>{products.length}</h2><small>In Admin List</small></div>
+      </div>
+
+      <h2>--- ORDER HISTORY ---</h2>
+      {orders.length === 0 && <p>No orders yet on this phone. Orders are remembered in this browser's Last Memory.</p>}
+      {orders.map((o, i) => (
+        <div key={i} style={{ border: "1px solid #ddd", padding: 12, borderRadius: 12, marginBottom: 10 }}>
+          <b>{o.id}</b> - {o.date}<br/>
+          Buyer: @{o.buyer}<br/>
+          Name: {o.name} | Phone: {o.phone}<br/>
+          Method: {o.method} | Address: {o.address}<br/>
+          Items: {o.items}<br/>
+          <b>Total: {o.total} Pi</b><br/>
+          TX: {o.txid || "Barcode - pay at pickup"}
         </div>
       ))}
+
+      <h2 style={{ marginTop: 24 }}>--- ADD PRODUCT ---</h2>
+      <input placeholder="Product name" value={pName} onChange={e => setPName(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 10, marginBottom: 8 }} />
+      <input placeholder="Price in Pi" value={pPrice} onChange={e => setPPrice(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 10, marginBottom: 8 }} />
+      <input placeholder="Description" value={pDesc} onChange={e => setPDesc(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 10, marginBottom: 8 }} />
+      <button onClick={() => {
+        if (!pName || !pPrice) return alert("Enter name + price");
+        const np = [...products, { name: pName, price: Number(pPrice), cat: pDesc || "General" }];
+        setProducts(np); localStorage.setItem("sosa_products", JSON.stringify(np));
+        setPName(""); setPPrice(""); setPDesc(""); alert("Product added");
+      }} style={{ width: "100%", padding: 14, background: "#000", color: "#fff", borderRadius: 10 }}>Add Product</button>
+
+      {products.map((p, i) => <p key={i} style={{ border: "1px solid #ddd", padding: 10, borderRadius: 10 }}>{p.name} - {p.price} Pi</p>)}
+
+      <button onClick={() => { if (confirm("Clear ALL history?")) { localStorage.removeItem("sosa_orders"); setOrders([]); } }} style={{ width: "100%", padding: 12, background: "red", color: "#fff", borderRadius: 10, marginTop: 20, border: 0 }}>Clear History</button>
     </div>
   );
 }
