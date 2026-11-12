@@ -1,354 +1,230 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
-import AdminAddProducts from "@/components/AdminAddProducts"; 
+import { useState, useEffect } from "react";
+import AdminAddProducts from "@/components/AdminAddProducts";
 
-type Product = { id: string; name: string; pricePi: number; category: string; stock: number; colours: string[]; sizes: string[]; imageText: string };
-const PRODUCTS: Product[] = [
-  { id:"sosa-001", name:"Classic Heel", pricePi:0.05, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Heel" },
-  { id:"sosa-002", name:"Royal Heel", pricePi:0.04, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Heel" },
-  { id:"sosa-003", name:"Lagos Heel", pricePi:0.03, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Heel" },
-  { id:"sosa-004", name:"Classic Flat", pricePi:0.05, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Flat" },
-  { id:"sosa-005", name:"Royal Flat", pricePi:0.04, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Flat" },
-  { id:"sosa-006", name:"Lagos Flat", pricePi:0.03, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Flat" },
-  { id:"sosa-007", name:"Executive Flat", pricePi:0.05, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Executive Flat" },
-  { id:"sosa-008", name:"Heritage Flat", pricePi:0.04, category:"Female Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Heritage Flat" },
-  { id:"sosa-009", name:"Classic Palm Slide", pricePi:0.05, category:"Men Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Palm Slide" },
-  { id:"sosa-010", name:"Royal Palm Slide", pricePi:0.04, category:"Men Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Palm Slide" },
-  { id:"sosa-011", name:"Lagos Palm Slide", pricePi:0.03, category:"Men Footwear Palm", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Palm Slide" },
-  { id:"sosa-012", name:"Classic Cross Bag", pricePi:0.05, category:"Men Hand Bags", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Cross Bag" },
-  { id:"sosa-013", name:"Royal Cross Bag", pricePi:0.04, category:"Men Hand Bags", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Cross Bag" },
-  { id:"sosa-014", name:"Lagos Cross Bag", pricePi:0.03, category:"Men Hand Bags", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Cross Bag" },
-  { id:"sosa-015", name:"Classic Hand Bag", pricePi:0.05, category:"Female Hand Bags", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Hand Bag" },
-  { id:"sosa-016", name:"Royal Hand Bag", pricePi:0.04, category:"Female Hand Bags", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Hand Bag" },
-  { id:"sosa-017", name:"Lagos Hand Bag", pricePi:0.03, category:"Female Hand Bags", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Hand Bag" },
-  { id:"sosa-018", name:"Classic Top", pricePi:0.05, category:"Male Tops", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Top" },
-  { id:"sosa-019", name:"Royal Top", pricePi:0.04, category:"Male Tops", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Top" },
-  { id:"sosa-020", name:"Lagos Top", pricePi:0.03, category:"Male Tops", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Top" },
-  { id:"sosa-021", name:"Classic Suit", pricePi:0.05, category:"Male Suits", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Classic Suit" },
-  { id:"sosa-022", name:"Royal Suit", pricePi:0.04, category:"Male Suits", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Royal Suit" },
-  { id:"sosa-023", name:"Lagos Suit", pricePi:0.03, category:"Male Suits", stock:20, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Lagos Suit" },
-  { id:"sosa-024", name:"Ankara Jacket Red", pricePi:2.5, category:"Female Native Wears", stock:10, colours:["Black","Brown","White","Dark Blue","Grey","Light Blue"], sizes:["M","L","XL","XXL","3XL"], imageText:"Ankara Jacket Red" },
+type Product = { id: string; name: string; category: string; price: number; oldPrice?: number; rating: number; reviews: number; img: string; desc: string };
+type CartItem = Product & { qty: number };
+type Order = { id: string; code: string; phone: string; items: CartItem[]; totalPi: number; status: string; date: string };
+
+const initialProducts: Product[] = [
+  { id: "1", name: "Luxe Sample Set", category: "Bestseller", price: 25, oldPrice: 40, rating: 4.9, reviews: 214, img: "💄", desc: "5 luxury minis to try before you buy full size." },
+  { id: "2", name: "Glow Up Kit", category: "Skincare", price: 30, oldPrice: 45, rating: 4.8, reviews: 186, img: "✨", desc: "Glow serum, cleanser and moisturizer mini kit." },
+  { id: "3", name: "Hair Revival Set", category: "Haircare", price: 28, rating: 4.7, reviews: 142, img: "💇‍♀️", desc: "Shampoo, conditioner and hair oil for revival." },
+  { id: "4", name: "Perfume Discovery", category: "Fragrance", price: 35, oldPrice: 50, rating: 4.9, reviews: 301, img: "🌸", desc: "6 designer-inspired perfume samples." },
+  { id: "5", name: "Skincare Starter", category: "Skincare", price: 22, rating: 4.6, reviews: 98, img: "🧴", desc: "Perfect starter routine for every skin type." },
+  { id: "6", name: "Makeup Pro Kit", category: "Makeup", price: 32, oldPrice: 48, rating: 4.8, reviews: 175, img: "💋", desc: "Lip, eye and face minis for a full look." },
+  { id: "7", name: "Nail Glam Set", category: "Nails", price: 18, rating: 4.7, reviews: 87, img: "💅", desc: "Polish, care and glam nail essentials." },
+  { id: "8", name: "Body Glow Oil", category: "Bodycare", price: 20, rating: 4.8, reviews: 120, img: "🫧", desc: "Lightweight glow oil for soft radiant skin." },
 ];
-const CATEGORIES = ["All","Traditional Wears","Female Native Wears","Male Native Wears","Men Shoes Box1 Leather","Men Shoes Box2 Sneakers","Men Footwear Palm","Female Footwear Palm","Men Hand Bags","Female Hand Bags","Male Tops","Female Tops","Male Suits","Female Suits","Male Single / Boxers","Female Bra / Underwear"];
-type CartItem = { id: string; name: string; pricePi: number; colour: string; size: string; qty: number };
-type Order = { code: string; date: string; name: string; phone: string; address: string; deliveryType: string; items: CartItem[]; totalPi: number; method: string; status: string };
+
+const categories = ["All", "Bestseller", "Skincare", "Haircare", "Fragrance", "Makeup", "Nails", "Bodycare"];
 
 export default function Home() {
   const [search, setSearch] = useState("");
-  const [cat, setCat] = useState("All");
   const [catIndex, setCatIndex] = useState(0);
-  const [dark, setDark] = useState(true);const [catsPerPage, setCatsPerPage] = useState(5);
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [detail, setDetail] = useState<Product | null>(null);
-  const [selColour, setSelColour] = useState("Black");
-  const [selSize, setSelSize] = useState("L");
-  const [rating, setRating] = useState(0);
   const [trackCode, setTrackCode] = useState("");
   const [trackResult, setTrackResult] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [custName, setCustName] = useState("");
-  const [custPhone, setCustPhone] = useState("");
-  const [custAddress, setCustAddress] = useState("");
-  const [deliveryType, setDeliveryType] = useState<"pickup"|"delivery">("pickup");
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [showTrack, setShowTrack] = useState(false);
 
   useEffect(() => {
-    try {
-      const c = localStorage.getItem("sosa-cart-v20"); if (c) setCart(JSON.parse(c));
-      const d = localStorage.getItem("sosa-dark"); if (d !== null) setDark(d === "1");
-      const ct = localStorage.getItem("sosa-cat"); if (ct) setCat(ct);
-      const ci = localStorage.getItem("sosa-catIndex"); if (ci) setCatIndex(parseInt(ci) || 0);
-      const s = localStorage.getItem("sosa-search"); if (s) setSearch(s);
-      const r = localStorage.getItem("sosa-rating"); if (r) setRating(parseInt(r) || 0);
-      const o = localStorage.getItem("sosa-orders-v20"); if (o) setOrders(JSON.parse(o));
-      const lo = localStorage.getItem("sosa-last-order"); if (lo) setLastOrder(JSON.parse(lo));
-      const n = localStorage.getItem("sosa-name"); if (n) setCustName(n);
-      const p = localStorage.getItem("sosa-phone"); if (p) setCustPhone(p);
-      const a = localStorage.getItem("sosa-address"); if (a) setCustAddress(a);
-      const dt = localStorage.getItem("sosa-deliveryType"); if (dt) setDeliveryType(dt as any);
-    } catch {}
-    setLoaded(true);
+    const saved = localStorage.getItem("sosa_orders");
+    if (saved) setOrders(JSON.parse(saved));
   }, []);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-cart-v20", JSON.stringify(cart)); }, [cart, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-dark", dark ? "1" : "0"); }, [dark, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-cat", cat); }, [cat, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-catIndex", String(catIndex)); }, [catIndex, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-search", search); }, [search, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-rating", String(rating)); }, [rating, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-orders-v20", JSON.stringify(orders)); }, [orders, loaded]);
-  useEffect(() => { if (loaded && lastOrder) localStorage.setItem("sosa-last-order", JSON.stringify(lastOrder)); }, [lastOrder, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-name", custName); }, [custName, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-phone", custPhone); }, [custPhone, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-address", custAddress); }, [custAddress, loaded]);
-  useEffect(() => { if (loaded) localStorage.setItem("sosa-deliveryType", deliveryType); }, [deliveryType, loaded]);
 
-  const visibleCats = useMemo(() => CATEGORIES.slice(catIndex, catIndex + 5), [catIndex]);
-  const filtered = PRODUCTS.filter(p => (cat === "All" || p.category === cat || (cat === "Traditional Wears" && p.category.includes("Native"))) && p.name.toLowerCase().includes(search.toLowerCase()));
-  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-  const totalPi = cart.reduce((s, i) => s + i.pricePi * i.qty, 0);
-  const deliveryFee = deliveryType === "delivery" ? 0.0001 : 0;
-  const grandTotal = parseFloat((totalPi + deliveryFee).toFixed(7));
+  useEffect(() => {
+    localStorage.setItem("sosa_orders", JSON.stringify(orders));
+  }, [orders]);
 
-  function addToCart(p: Product, colour = "Black", size = "L") {
-    const key = p.id + "|" + colour + "|" + size;
-    setCart(prev => {
-      const f = prev.find(i => i.id === key);
-      if (f) return prev.map(i => i.id === key ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { id: key, name: p.name, pricePi: p.pricePi, colour, size, qty: 1 }];
+  const filtered = products.filter((p) => {
+    const cat = categories[catIndex];
+    const matchCat = cat === "All" || p.category === cat;
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  function addToCart(p: Product) {
+    setCart((prev) => {
+      const found = prev.find((i) => i.id === p.id);
+      if (found) return prev.map((i) => (i.id === p.id ? { ...i, qty: i.qty + 1 } : i));
+      return [...prev, { ...p, qty: 1 }];
     });
   }
-  function changeQty(id: string, delta: number) { setCart(prev => prev.map(i => i.id === id ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0)); }
-  function removeItem(id: string) { setCart(prev => prev.filter(i => i.id !== id)); }
 
-  function createOrder(method: string): Order | null {
-    if (!custName.trim()) { alert("Please enter your Name"); return null; }
-    if (!custPhone.trim()) { alert("Please enter your Phone"); return null; }
-    if (deliveryType === "delivery" && !custAddress.trim()) { alert("Please enter your Delivery Address"); return null; }
+  function removeFromCart(id: string) {
+    setCart((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  function updateQty(id: string, delta: number) {
+    setCart((prev) => prev.map((i) => (i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i)));
+  }
+
+  const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+
+  function createOrder(payMethod: string) {
     if (cart.length === 0) { alert("Cart is empty"); return null; }
     const code = "SOSA-" + Date.now().toString().slice(-6);
-    const order: Order = { code, date: new Date().toLocaleString(), name: custName, phone: custPhone, address: deliveryType === "delivery" ? custAddress : "Pickup: No.1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.", deliveryType, items: cart, totalPi: grandTotal, method, status: method === "Barcode" ? "Pending - Pay on Pickup" : "Paid - Preparing" };
-    const newOrders = [order, ...orders];
-    setOrders(newOrders); setLastOrder(order);
+    const o: Order = { id: code, code: code, phone: phone, items: cart, totalPi: cartTotal, status: payMethod + " - Processing", date: new Date().toLocaleString() };
+    setOrders((prev) => [o, ...prev]);
+    setLastOrder(o);
     setCart([]);
-    return order;
+    return o;
   }
 
   async function payWithPi() {
-  if (cart.length === 0) { alert("Cart is empty"); return; }
-  // @ts-ignore
-  if (typeof window === "undefined" || !window.Pi) {
-    alert("Open this site inside Pi Browser to pay with Pi.");
-    return;
-  }
-  // @ts-ignore
-  const Pi = window.Pi;
-  try { Pi.init({ version: "2.0", sandbox:true }); } catch(e) {}
-
-  const amount = Number(grandTotal.toFixed(2));
-  if (!amount || amount <= 0) { alert("Invalid total"); return; }
-
-  try {
-        // @ts-ignore
-    await Pi.authenticate(["username", "payments"], (payment: any) => {
-      fetch("/api/pi/incomplete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction?.txid }),
+    try {
+      const Pi = (window as any).Pi;
+      if (!Pi) { alert("Open this in Pi Browser to pay with Pi"); return; }
+      await Pi.init({ version: "2.0" });
+      const auth = await Pi.authenticate(["payments", "username"], () => {});
+      const payment = await Pi.createPayment({
+        amount: cartTotal,
+        memo: "SOSA Order",
+        metadata: { order: "SOSA" },
+      }, {
+        onReadyForServerApproval: async (paymentId: string) => { console.log(paymentId); },
+        onReadyForServerCompletion: async (paymentId: string, txid: string) => { console.log(paymentId, txid); },
+        onCancel: () => alert("Payment cancelled"),
+        onError: (e: any) => { alert("Payment error: " + (e.message || "Unknown")); setCheckoutOpen(false); },
       });
-    });
+      console.log(payment);
+      const o = createOrder("Pi Pay Paid");
+      if (o) setCheckoutOpen(false);
+    } catch (e: any) {
+      alert("Payment error: " + (e.message || "Unknown"));
+      setCheckoutOpen(false);
+    }
+  }
 
-    // @ts-ignore
-    await Pi.createPayment({
-      amount: amount,
-      memo: "SOSA Outfits order - " + cart.length + " item(s)",
-      metadata: { name: custName, phone: custPhone, deliveryType: deliveryType, address: custAddress, cart: cart.map((i: any) => i.name) }
-    }, {
-      onReadyForServerApproval: async (paymentId: string) => {
-        await fetch("/api/pi/approve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId })
-        });
-      },
-      onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-        await fetch("/api/pi/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, txid })
-        });
-        const o = createOrder("Pi Pay - Paid");
-        if (o) { setCheckoutOpen(false); setCartOpen(false); alert("Payment Complete! Order " + o.code + " is Paid. Check History."); }
-      },
-      onCancel: () => { alert("Payment cancelled"); },
-      onError: (e: any) => { alert("Payment error: " + (e?.message || "Unknown")); }
-    });
-  } catch (e: any) {
-    alert("Pi payment failed: " + (e?.message || "Cancelled"));
-  }
-}
   function payWithBarcode() {
-    const o = createOrder("Barcode");
-    if (o) { setCheckoutOpen(false); setCartOpen(false); setHistoryOpen(true); alert("Barcode Order Created!\n\nCode: " + o.code + "\nTotal: " + o.totalPi.toFixed(2) + " Pi\nShow this code at pickup.\nStatus: Pending - Pay on Pickup"); }
+    const o = createOrder("Barcode - Pay on Delivery");
+    if (o) setCheckoutOpen(false);
   }
+
   function shareApp() {
-    const url = "https://sosa-v19-nqkiejyop-chijoe09.vercel.app/"; const text = "SOSA-outfits - Sophisticated Samples. Made in Nigeria. " + url;
-    if (navigator.share) navigator.share({ title: "SOSA-outfits", text, url }).catch(() => {});
-    else { navigator.clipboard?.writeText(url); alert("Link copied: " + url); }
+    const text = "SOSA - Sophisticated Samples. Made in Nigeria.";
+    if (navigator.share) { navigator.share({ title: "SOSA", text, url: "https://sosa-v19.vercel.app" }); } else { alert("Link copied: https://sosa-v19.vercel.app"); }
   }
+
   function doTrack() {
     const q = trackCode.trim().toLowerCase();
-    const found = orders.find(o => o.code.toLowerCase() === q || o.phone === trackCode.trim());
-    if (found) setTrackResult("Order " + found.code + " - " + found.status + " | " + found.deliveryType + " | Total " + found.totalPi.toFixed(2) + " Pi | " + found.date);
-    else if (lastOrder && (lastOrder.code.toLowerCase() === q || lastOrder.phone === trackCode.trim())) setTrackResult("Order " + lastOrder.code + " - " + lastOrder.status);
-    else setTrackResult(trackCode ? "No order found for " + trackCode + ". Check code or phone. Your last order: " + (lastOrder ? lastOrder.code + " - " + lastOrder.status : "none yet") : "Enter your order code");
+    const found = orders.find((o) => o.code.toLowerCase() === q || o.phone === trackCode.trim());
+    if (found) {
+      setTrackResult("Order " + found.code + " - " + found.status);
+    } else if (lastOrder && (lastOrder.code.toLowerCase() === q || lastOrder.phone === trackCode.trim())) {
+      setTrackResult("Order " + lastOrder.code + " - " + lastOrder.status);
+    } else {
+      setTrackResult(trackCode ? "No order found for " + trackCode : "Enter your order code");
+    }
   }
+
   return (
-    <div className={dark ? "wrap dark" : "wrap light"}>
-      <header className="header">
-        <div className="topRow">
-          <div className="logo">SOSA</div>
-          <div><h1>SOPHISTICATED SAMPLES</h1><p className="sub">SOSA-outfits.</p></div>
-          <div className="topBtns">
-            <button onClick={() => setDark(!dark)}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
-            <button onClick={() => { const r = prompt("Rate us 1-5 stars"); if (r) setRating(parseInt(r) || 0); }}>⭐ Rate {rating ? rating + "/5" : ""}</button>
-            <button onClick={shareApp}>↗ Share</button>
-            <button onClick={() => setHistoryOpen(true)}>📦 History ({orders.length})</button>
-            style={{display: typeof window !== "undefined" && window.location.href.includes("admin=sosa5463") ? "inline-block" : "none"}} onClick={()=>{ if(prompt("Enter Admin PIN")==="sosa5463"){ setAdminOpen(true) } else { alert("Wrong PIN") } }}>⚙️ Admin</button>
-          </div>
+    <div className="min-h-screen bg-pink-50 text-gray-900">
+      <header className="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-20">
+        <div><h1 className="text-2xl font-bold text-pink-600">SOSA 💄</h1><p className="text-xs">Sophisticated Samples</p></div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowTrack(!showTrack)} className="bg-gray-100 px-3 py-2 rounded-full text-sm">Track Order</button>
+          <button onClick={() => setCartOpen(true)} className="bg-pink-600 text-white px-4 py-2 rounded-full">Cart ({cartCount})</button>
         </div>
-        <div className="cartTopRight">
-          <button className="cartBtn" onClick={() => setCartOpen(true)}>🛒 Cart ({totalQty}) - {totalPi.toFixed(2)} Pi</button>
-          {lastOrder && <span className="lastOrder">Last: {lastOrder.code} - {lastOrder.status}</span>}
+      </header>
+
+      {showTrack && (
+        <div className="bg-white m-4 p-4 rounded-xl shadow">
+          <h2 className="font-bold mb-2">Track Your Order</h2>
+          <input value={trackCode} onChange={(e) => setTrackCode(e.target.value)} placeholder="Enter order code or phone" className="border p-2 rounded w-full mb-2" />
+          <button onClick={doTrack} className="bg-pink-600 text-white px-4 py-2 rounded-full w-full">Track</button>
+          {trackResult && <p className="mt-2 text-sm">{trackResult}</p>}
         </div>
-        <input className="search" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
-        <div className="catBar">
-  <button className="arrow" disabled={catIndex===0} onClick={()=>setCatIndex(i=>Math.max(0,i-5))}>{"<< Prev"}</button>
-
-  <div style={{flex:1, textAlign:"center"}}>
-    <div style={{fontWeight:800, fontSize:14, color:"#fff"}}>
-      Page {Math.floor(catIndex/5)+1} of {Math.ceil(CATEGORIES.length/5)} • {Math.ceil(CATEGORIES.length/5)-(Math.floor(catIndex/5)+1)} pages left to view
-    </div>
-    <div style={{height:6, background:"#333", borderRadius:99, overflow:"hidden", marginTop:4}}>
-      <div style={{width:`${((Math.floor(catIndex/5)+1)/Math.ceil(CATEGORIES.length/5))*100}%`, height:"100%", background:"#ff7a00"}} />
-    </div>
-  </div>
-
-  <button className="arrow" disabled={catIndex+5>=CATEGORIES.length} onClick={()=>setCatIndex(i=>Math.min(CATEGORIES.length-5,i+5))}>{"Next >>"}</button>
-</div>
-
-<div className="catScroll">
-  {CATEGORIES.slice(catIndex, catIndex+5).map(c=>(
-    <button key={c} className={cat===c?"pill active":"pill"} onClick={()=>setCat(c)}>{c}</button>
-  ))}
-</div>
-</header>
-      <main className="grid">
-        {filtered.map(p => (
-          <div key={p.id} className="card">
-            <div className="imgBox" onClick={() => { setDetail(p); setSelColour("Black"); setSelSize("L"); }}>
-              <div className="imgTop">SOSA COLLECTIONS</div><div className="imgName">{p.imageText}</div><div className="imgMade">Made in Nigeria</div><div className="tapHint">Tap to View Variables</div>
-            </div>
-            <div className="pName">{p.name}</div><div className="pPrice">{p.pricePi.toFixed(2)} Pi</div><div className="stock">In stock ({p.stock})</div>
-            <button className="addBtn" onClick={() => addToCart(p)}>Add to Cart</button>
-          </div>
-        ))}
-        {filtered.length === 0 && <p className="center">No products in this category yet.</p>}
-      </main>
-
-      {detail && (
-        <div className="modalBg" onClick={() => setDetail(null)}><div className="modal" onClick={e => e.stopPropagation()}>
-          <button className="close" onClick={() => setDetail(null)}>✕</button>
-          <div className="imgBox big"><div className="imgTop">SOSA COLLECTIONS</div><div className="imgName">{detail.imageText}</div><div className="imgMade">Made in Nigeria</div></div>
-          <h2>{detail.name} - {detail.pricePi.toFixed(2)} Pi</h2><p>View Variables</p>
-          <div className="label">Colour:</div><div className="chips">{detail.colours.map(c => <button key={c} className={selColour === c ? "chip active" : "chip"} onClick={() => setSelColour(c)}>{c}</button>)}</div>
-          <div className="label">Size:</div><div className="chips">{detail.sizes.map(s => <button key={s} className={selSize === s ? "chip active" : "chip"} onClick={() => setSelSize(s)}>{s}</button>)}</div>
-          <div className="modalBtns"><button className="addBtn" onClick={() => { addToCart(detail, selColour, selSize); setDetail(null); }}>Add to Cart</button><button className="addBtn" onClick={() => { addToCart(detail, selColour, selSize); setDetail(null); setCartOpen(true); }}>Buy with Pi</button></div>
-        </div></div>
       )}
 
-      {cartOpen && (
-        <div className="modalBg" onClick={() => setCartOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
-          <button className="close" onClick={() => setCartOpen(false)}>✕</button>
-          <h2>Your Cart - Top Right Record</h2>
-          {cart.length === 0 && <p>Cart is empty. {lastOrder ? "Last order: " + lastOrder.code + " - " + lastOrder.status : ""}</p>}
-          {cart.map(item => (
-            <div key={item.id} className="cartLine"><div><b>{item.name}</b><br /><span>{item.colour} / {item.size} - {item.pricePi.toFixed(2)} Pi each</span></div>
-            <div className="qtyRow"><button onClick={() => changeQty(item.id, -1)}>-</button><span>{item.qty}</span><button onClick={() => changeQty(item.id, 1)}>+</button><button className="rm" onClick={() => removeItem(item.id)}>Remove</button></div>
-            <div><b>{(item.pricePi * item.qty).toFixed(2)} Pi</b></div></div>
+      <div className="p-4">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search samples..." className="border p-3 rounded-full w-full mb-4 bg-white" />
+        <div className="flex gap-2 overflow-x-auto mb-4">
+          {categories.map((c, i) => (
+            <button key={c} onClick={() => setCatIndex(i)} className={catIndex === i ? "bg-pink-600 text-white px-4 py-2 rounded-full whitespace-nowrap" : "bg-white px-4 py-2 rounded-full whitespace-nowrap"}>{c}</button>
           ))}
-          {cart.length > 0 && (<><h3>Total: {totalPi.toFixed(2)} Pi</h3><button className="addBtn full" onClick={() => { setCartOpen(false); setCheckoutOpen(true); }}>Go to Checkout →</button></>)}
-        </div></div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {filtered.map((p) => (
+            <div key={p.id} className="bg-white rounded-xl p-3 shadow">
+              <div className="text-4xl text-center">{p.img}</div>
+              <h3 className="font-bold mt-2">{p.name}</h3>
+              <p className="text-xs text-gray-500">{p.desc}</p>
+              <p className="text-sm mt-1">⭐ {p.rating} ({p.reviews})</p>
+              <p className="font-bold mt-1">${p.price} {p.oldPrice && <span className="line-through text-gray-400 text-sm">${p.oldPrice}</span>}</p>
+              <button onClick={() => addToCart(p)} className="bg-pink-600 text-white w-full py-2 rounded-full mt-2">Add to Cart</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {cartOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-30">
+          <div className="bg-white w-full max-w-md p-4 overflow-y-auto">
+            <div className="flex justify-between"><h2 className="font-bold text-xl">Your Cart</h2><button onClick={() => setCartOpen(false)}>✕</button></div>
+            {cart.length === 0 && <p className="mt-4">Cart is empty</p>}
+            {cart.map((item) => (
+              <div key={item.id} className="flex justify-between items-center border-b py-3">
+                <div><p className="font-bold">{item.name}</p><p>${item.price} x {item.qty}</p></div>
+                <div className="flex gap-2 items-center">
+                  <button onClick={() => updateQty(item.id, -1)} className="bg-gray-100 px-2 rounded">-</button>
+                  <span>{item.qty}</span>
+                  <button onClick={() => updateQty(item.id, 1)} className="bg-gray-100 px-2 rounded">+</button>
+                  <button onClick={() => removeFromCart(item.id)} className="text-red-500">Remove</button>
+                </div>
+              </div>
+            ))}
+            {cart.length > 0 && (
+              <div className="mt-4">
+                <p className="font-bold">Total: ${cartTotal}</p>
+                <button onClick={() => { setCartOpen(false); setCheckoutOpen(true); }} className="bg-pink-600 text-white w-full py-3 rounded-full mt-2">Checkout</button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {checkoutOpen && (
-<div className="modalBg" onClick={()=>setCheckoutOpen(false)}>
-<div className="modal" onClick={(e)=>e.stopPropagation()}>
-<button className="close" onClick={()=>setCheckoutOpen(false)}>X</button>
-<h2>Checkout</h2>
-
-<div className="chips">
-<button className={deliveryType==="pickup" ? "chip active" : "chip"} onClick={()=>setDeliveryType("pickup")}>📦 Self Pickup - Free</button>
-<button className={deliveryType==="delivery" ? "chip active" : "chip"} onClick={()=>setDeliveryType("delivery")}>🚚 Delivery - 0.0001 Pi</button>
-</div>
-
-{deliveryType==="pickup" && <p>📦 Pickup: No.1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>}
-{deliveryType==="delivery" && <p>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 outside)</p>}
-
-<label className="label">Name</label>
-<input className="input" placeholder="Your Name" value={custName} onChange={(e)=>setCustName(e.target.value)} autoComplete="name" />
-
-<label className="label">Phone</label>
-<input className="input" placeholder="080..." value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g,""))} type="tel" inputMode="tel" autoComplete="tel" maxLength={11} />
-
-{deliveryType==="delivery" && (
-<>
-<label className="label">Delivery Address</label>
-<input className="input" placeholder="Street, Area, Lagos" value={custAddress} onChange={(e)=>setCustAddress(e.target.value)} autoComplete="street-address" />
-</>
-)}
-
-<h3>Items: {totalQty} | Products: {cart.map(i=>i.name+" x"+i.qty).join(", ")}</h3>
-<h3>Grand Total: {grandTotal} Pi</h3>
-<button className="addBtn" onClick={payWithPi}>Pay with Pi - {grandTotal} Pi</button>
-<button className="addBtn" onClick={payWithBarcode}>Pay with Barcode at Pickup - {grandTotal} Pi</button>
-<p className="small">Barcode: You will get a real SOSA-XXXXXX code after you tap above. Show it at pickup. Admin scans it.</p>
-
-</div>
-</div>
-)}
-
-      {historyOpen && (
-        <div className="modalBg" onClick={() => setHistoryOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
-          <button className="close" onClick={() => setHistoryOpen(false)}>✕</button>
-          <h2>📦 Order History - Last Memory</h2>
-          {lastOrder && <p>Last Order: {lastOrder.code} - {lastOrder.status}</p>}
-          {orders.length === 0 && <p>No orders yet.</p>}
-          {orders.map(o => (
-            <div key={o.code} className="orderCard">
-              <div><b>{o.code}</b> - {o.status} - {o.method}</div>
-              <div>{o.date} - {o.name} - {o.phone} - {o.deliveryType}</div>
-              <div>Items: {o.items.map(i => i.name + " x" + i.qty).join(", ")}</div>
-              <div>Total: {o.totalPi.toFixed(2)} Pi</div>
-              <div className="barcode">||||| {o.code} |||||</div>
-              <div style={{fontSize: "12px", textAlign: "center"}}>{o.code}</div>
-            </div>
-          ))}
-          {orders.length > 0 && <button className="addBtn" onClick={() => { if (confirm("Clear all history?")) { setOrders([]); setLastOrder(null); localStorage.removeItem("sosa-orders-v20"); localStorage.removeItem("sosa-last-order"); } }}>Clear History</button>}
-        </div></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-xl p-4 w-full max-w-md">
+            <div className="flex justify-between"><h2 className="font-bold text-xl">Checkout</h2><button onClick={() => setCheckoutOpen(false)}>✕</button></div>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" className="border p-2 rounded w-full mt-3" />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="border p-2 rounded w-full mt-2" />
+            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Delivery Address" className="border p-2 rounded w-full mt-2" />
+            <p className="font-bold mt-3">Total: ${cartTotal}</p>
+            <button onClick={payWithPi} className="bg-purple-600 text-white w-full py-3 rounded-full mt-3">Pay with Pi 🟣</button>
+            <button onClick={payWithBarcode} className="bg-gray-900 text-white w-full py-3 rounded-full mt-2">Pay with Barcode / Pay on Delivery</button>
+            {lastOrder && <p className="text-sm mt-2">Last Order: {lastOrder.code} - {lastOrder.status}</p>}
+          </div>
+        </div>
       )}
+
+      <div className="p-4 flex gap-2">
+        <button onClick={shareApp} className="bg-white border px-4 py-2 rounded-full flex-1">Share App</button>
+        <button onClick={() => setAdminOpen(true)} className="bg-white border px-4 py-2 rounded-full flex-1">Admin</button>
+      </div>
 
       {adminOpen && (
-        <div className="modalBg" onClick={() => setAdminOpen(false)}><div className="modal" onClick={e => e.stopPropagation()}>
-          <button className="close" onClick={() => setAdminOpen(false)}>✕</button>
-          <h2>⚙️ Admin - All Orders</h2><div style={{background:"#222", padding:10, borderRadius:10, margin:"10px 0"}}>
-            <AdminAddProducts onSaved={() => window.location.reload()} />
-  <label className="label">Categories Per Page - controls total pages</label>
-  <input className="input" type="number" value={catsPerPage} onChange={(e)=>{
-    const v = parseInt(e.target.value)||1;
-    setCatsPerPage(v);
-    setCatIndex(0);
-  }} />
-  <p className="small">Now: {CATEGORIES.length} categories / {catsPerPage} per page = {Math.ceil(CATEGORIES.length/catsPerPage)} pages total</p>
-</div>
-          <p>Total Orders: {orders.length}</p>
-          <input className="input" placeholder="Track by code or phone..." value={trackCode} onChange={e => setTrackCode(e.target.value)} />
-          <button className="addBtn" onClick={doTrack}>Track Order</button>
-          {trackResult && <p>{trackResult}</p>}
-          {orders.map(o => (
-            <div key={o.code} className="orderCard">
-              <div><b>{o.code}</b> - {o.status}</div>
-              <div>{o.name} - {o.phone} - {o.address}</div>
-              <div>{o.items.map(i => i.name + " x" + i.qty).join(", ")} - {o.totalPi.toFixed(2)} Pi</div>
-              <div className="barcode">||||| {o.code} |||||</div>
-            </div>
-          ))}
-        </div></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-xl p-4 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between"><h2 className="font-bold">Admin</h2><button onClick={() => setAdminOpen(false)}>✕</button></div>
+            <AdminAddProducts onAdd={(p: Product) => setProducts((prev) => [...prev, p])} />
+            <div className="mt-4"><h3 className="font-bold">Orders ({orders.length})</h3>{orders.map((o) => (<p key={o.id} className="text-sm border-b py-1">{o.code} - {o.status} - ${o.totalPi}</p>))}</div>
+          </div>
+        </div>
       )}
+
+      <footer className="text-center p-6 text-sm text-gray-500">SOSA - Sophisticated Samples • Made in Nigeria 🇳🇬</footer>
     </div>
   );
-                                                                                                                                                                                                                                                                                                                                     }
+}
