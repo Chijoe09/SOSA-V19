@@ -218,7 +218,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
           <div className="bg-white rounded-xl p-4 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between"><h2 className="font-bold">Admin</h2><button onClick={() => setAdminOpen(false)}>✕</button></div>
-            <AdminAddProducts onAdd={(p: Product) => setProducts((prev) => [...prev, p])} />
+            <AdminAddProducts />
             <div className="mt-4"><h3 className="font-bold">Orders ({orders.length})</h3>{orders.map((o) => (<p key={o.id} className="text-sm border-b py-1">{o.code} - {o.status} - ${o.totalPi}</p>))}</div>
           </div>
         </div>
