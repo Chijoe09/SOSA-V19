@@ -2,8 +2,7 @@
 body { margin: 0; font-family: system-ui, sans-serif; }
 .wrap.dark { background: #000; color: #fff; min-height: 100vh; }
 .wrap.light { background: #fff; color: #111; min-height: 100vh; }
-.header { padding: 14px; position: relative; background: #000; border-bottom: 1px solid #333; }
-.wrap.light .header { background: #fff; }
+.header { padding: 14px; position: sticky; top: 0; z-index: 10; background: inherit; border-bottom: 1px solid #333; }
 .topRow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .logo { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg,#2563eb,#f97316,#facc15,#ef4444); display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 12px; }
 .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; }
@@ -56,34 +55,3 @@ body { margin: 0; font-family: system-ui, sans-serif; }
 .footSmall { font-size: 12px; opacity: 0.7; }
 .center { text-align: center; }
 .small { font-size: 13px; opacity: 0.8; }
-
-.cartTopRight { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; justify-content: flex-end; }
-.lastOrder { font-size: 12px; background: #222; padding: 6px 10px; border-radius: 20px; }
-.wrap.light .lastOrder { background: #eee; }
-.field { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #555; margin: 4px 0 10px; background: #222; color: #fff; }
-.wrap.light .field { background: #f3f3f3; color: #111; }
-.barcode { font-family: monospace; font-size: 18px; letter-spacing: 2px; background: #fff; color: #000; padding: 8px; text-align: center; border-radius: 6px; margin-top: 6px; }
-
-/* --- CHECKOUT FIX - STACK FIELDS --- */
-.modal .label{
-  display:block !important;
-  width:100% !important;
-  margin:12px 0 4px 0 !important;
-  font-weight:700 !important;
-}
-.modal .input{
-  display:block !important;
-  width:100% !important;
-  box-sizing:border-box !important;
-  padding:12px !important;
-  font-size:16px !important;
-  margin:0 0 4px 0 !important;
-}
-.modal .chips{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:8px !important;
-}
-.modal .chips button{
-  width:100% !important;
-}
