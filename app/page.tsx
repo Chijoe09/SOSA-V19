@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 
-declare global { interface Window { Pi: any } }
 
 const PRODUCTS = [
   { id: "sosa-001", name: "Classic Heel", price: 0.05, cat: "Footwear" },
@@ -53,7 +52,7 @@ export default function Home() {
     const s = document.createElement("script");
     s.src = "https://sdk.minepi.com/pi-sdk.js";
     s.onload = () => {
-      window.Pi.init({ version: "2.0", sandbox: false });
+      (window as any).Pi.init({ version: "2.0", sandbox: true });
       setStatus("Pi SDK Ready");
     };
     document.head.appendChild(s);
@@ -68,22 +67,22 @@ export default function Home() {
 
   const loginPi = async () => {
     try {
-      const auth = await window.Pi.authenticate(["username", "payments"], (p: any) => console.log(p));
+      const auth = await (window as any).Pi.authenticate(["username", "payments"], (p: any) => console.log(p));
       setUser(auth.user);
       alert("Welcome " + auth.user.username);
     } catch (e: any) { alert("Pi Login failed: " + e.message); }
   };
 
   const payWithPi = async () => {
-    if (!window.Pi) return alert("Open in Pi Browser");
+    if (!(window as any).Pi) return alert("Open in Pi Browser");
     if (cart.length === 0) return alert("Cart empty");
     try {
       if (!user) {
-        const auth = await window.Pi.authenticate(["username", "payments"], () => {});
+        const auth = await (window as any).Pi.authenticate(["username", "payments"], () => {});
         setUser(auth.user);
       }
       setStatus("Creating Pi Payment...");
-      await window.Pi.createPayment({
+      await (window as any).Pi.createPayment({
         amount: Number(total.toFixed(4)),
         memo: "SOSA Order - " + cart.map(c=>c.name).join(", "),
         metadata: { orderId: "SOSA-" + Date.now(), items: cart },
