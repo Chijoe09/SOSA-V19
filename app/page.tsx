@@ -126,11 +126,10 @@ export default function Home() {
     );
   };
     <h1>SOPHISTICATED SAMPLES</h1><p>SOSA-outfits. Made in Nigeria</p>
-    <p style={{color:"orange",fontSize:13}}>{sdkReady ? "Pi SDK Ready" : "Loading Pi..."} {user ? " | @" + user.username + " | " + myPoints.toFixed(1) + " pts" : ""} {status ? " | " + status : ""}</p>
-   <div style={{display:"flex",gap:8}}>
-{user ? <button onClick={()=>setUser(null)}>Logout</button> : <button onClick={()=>setUser(prompt("Enter your name"))}>Login</button>}
+    <p style={{color:"orange",fontSize:13}}>{sdkReady ? "Pi SDK Ready" : "Loading Pi..."} {user ? " @ " + user + " | " + myPoints.toFixed(1) + " pts" : ""}</p>
+<div style={{display:"flex",gap:8}}>
+{user ? <button onClick={()=>setUser(null)}>Logout</button> : <button onClick={()=>setUser(prompt("Enter your name") || "")}>Login</button>}
 </div>
-    </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{PRODUCTS.map((p,i)=>(<div key={i} style={{background:"#111",borderRadius:12,padding:10,textAlign:"center"}}><div style={{background:"#eee",color:"#000",padding:18,borderRadius:8,fontWeight:"bold"}}>{p.name}</div><p style={{fontSize:13,margin:"8px 0"}}>{p.name} - {p.price} Pi - {p.cat}</p><button onClick={()=>{setSelected(p); setColor("Black"); setSize("L");}} style={{background:"orange",width:"100%",padding:10,borderRadius:20,border:0,fontWeight:"bold"}}>Add to Cart</button></div>))}</div>
 
     {selected && (<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}><div style={{background:"#fff",color:"#000",padding:20,borderRadius:16,width:"90%",maxWidth:360}}><h3>{selected.name} - {selected.price} Pi</h3><p>Colour</p><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{COLORS.map((c)=>(<button key={c} onClick={()=>setColor(c)} style={{padding:"8px 12px",borderRadius:20,background:color===c?"orange":"#eee",border:0}}>{c}</button>))}</div><p>Size</p><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SIZES.map((s)=>(<button key={s} onClick={()=>setSize(s)} style={{padding:"8px 12px",borderRadius:20,background:size===s?"orange":"#eee",border:0}}>{s}</button>))}</div><button onClick={addToCart} style={{background:"orange",width:"100%",padding:12,borderRadius:20,border:0,fontWeight:"bold",marginTop:16}}>Add to Cart - {selected.price} Pi</button><button onClick={()=>setSelected(null)} style={{width:"100%",padding:10,marginTop:8,borderRadius:20}}>Close</button></div></div>)}
