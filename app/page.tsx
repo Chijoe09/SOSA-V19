@@ -10,6 +10,8 @@ SOSA MEMORY - DO NOT DELETE:
 - Save order + clear cart ONLY in onReadyForServerCompletion AFTER Wallet says Payment succeeded!
 - NEVER show "Payment finished / Payment SUCCESS" after await Pi.createPayment - that fires BEFORE approval
 - Memo: Name | Phone | PICKUP/DELIVERY address
+- FEE: SOSA gets only Grand Total. Pi Network takes extra 0.01 Pi fee. Wallet shows Grand Total + 0.01. E.g. 0.03 + 0.01 = 0.04 in Wallet. Must show this in Cart.
+- EMPTY CART: Never allow Pay. Button disabled + "Cart is empty"
 - Parked: Leaderboard, Rewards 1Pi=10pts, New Arrivals, Follow, Share, SOSA-Social
 */
 
@@ -52,6 +54,7 @@ const SIZES = ["S", "M", "L", "XL", "XXL", "3XL"];
 const PICKUP_ADDRESS = "No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.";
 const PICKUP_INFO = "Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.";
 const DELIVERY_INFO = "Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)";
+const PI_FEE = 0.01;
 
 const getPi = () => { if (typeof window === "undefined") return null; return (window as any).Pi || null; };
 
@@ -87,22 +90,21 @@ export default function Home() {
   };
 
   const addToCart = () => { if (!selected) return; setCart([...cart, { ...selected, color, size, qty: 1 }]); setSelected(null); setStatus("Added to cart"); setTimeout(() => setStatus(""), 2000); };
-  // (X) - removes ONLY that one item
   const removeItem = (index: number) => { setCart(cart.filter((_, i) => i !== index)); };
 
   const total = cart.reduce((a, c) => a + c.price * c.qty, 0);
   const deliveryFee = method === "delivery" ? 0.0001 : 0;
   const grandTotal = total + deliveryFee;
+  const walletTotal = grandTotal + PI_FEE;
 
   const saveOrder = (txid: string, barcode: string, snap: any) => {
     const order = { id: barcode || ("SOSA-" + Date.now()), date: new Date().toLocaleString(), buyer: user?.username || snap.buyer || "Guest", name: snap.name, phone: snap.phone, method: snap.method, address: snap.method === "delivery" ? snap.address : snap.pickupPoint, items: snap.cart.map((c: any) => `${c.name} - ${c.color}/${c.size} x${c.qty}`).join(", "), total: snap.grandTotal, txid };
     const old = JSON.parse(localStorage.getItem("sosa_orders") || "[]"); old.unshift(order); localStorage.setItem("sosa_orders", JSON.stringify(old));
   };
 
-  // FIXED PAY - No early popup, clear cart ONLY after Wallet confirms
   const pay = async () => {
     if (paying) return;
-    if (cart.length === 0) return alert("Cart is empty");
+    if (cart.length === 0) return alert("Cart is empty - Add a product first");
     if (!fullName || !phone) return alert("Please enter your Full Name and Phone Number first");
     if (method === "delivery" && !address) return alert("Please enter your Delivery Address");
     if (!user) return alert("Please Login with Pi first");
@@ -115,17 +117,9 @@ export default function Home() {
       await Pi.createPayment(
         { amount: grandTotal, memo: memo.slice(0, 200), metadata: { name: fullName, phone, method, address: method === "delivery" ? address : pickupPoint } },
         {
-          onReadyForServerApproval: (paymentId: string) => {
-            setStatus("Payment approved by Pi, waiting for Wallet...");
-            return fetch("/api/pi/approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
-          },
+          onReadyForServerApproval: (paymentId: string) => { setStatus("Payment approved by Pi, waiting for Wallet..."); return fetch("/api/pi/approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) }); },
           onReadyForServerCompletion: (paymentId: string, txid: string) => {
-            // ONLY HERE - after Wallet says Payment succeeded!
-            saveOrder(txid, "", snap);
-            setCart([]);
-            setShowCart(false);
-            setPaying(false);
-            setStatus("");
+            saveOrder(txid, "", snap); setCart([]); setShowCart(false); setPaying(false); setStatus("");
             alert("Payment SUCCESS! Order saved. We will contact you on " + phone);
             return fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
           },
@@ -134,17 +128,12 @@ export default function Home() {
           onIncompletePaymentFound: (p: any) => { fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: p.paymentId, txid: p.transaction?.txid }) }); },
         }
       );
-      // NO ALERT HERE - we wait for onReadyForServerCompletion. If Wallet was closed without paying, onCancel handles it.
-      // Safety timeout: if Pi never calls back in 60s, unlock button
       setTimeout(() => { setPaying((prev) => { if (prev) setStatus(""); return false; }); }, 60000);
-    } catch (e: any) {
-      setPaying(false); setStatus("");
-      if (e.message && e.message.toLowerCase().includes("cancel")) alert("Payment cancelled");
-      else alert(e.message);
-    }
+    } catch (e: any) { setPaying(false); setStatus(""); if (e.message && e.message.toLowerCase().includes("cancel")) alert("Payment cancelled"); else alert(e.message); }
   };
 
   const payBarcode = () => {
+    if (cart.length === 0) return alert("Cart is empty - Add a product first");
     if (!fullName || !phone) return alert("Enter Name and Phone first");
     if (method === "delivery" && !address) return alert("Enter Delivery Address");
     const code = "SOSA-" + Math.floor(100000 + Math.random() * 900000);
@@ -165,34 +154,29 @@ export default function Home() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {PRODUCTS.map((p, i) => (<div key={i} style={{ background: "#111", borderRadius: 12, padding: 10, textAlign: "center" }}><div style={{ background: "#eee", color: "#000", padding: 18, borderRadius: 8, fontWeight: "bold" }}>{p.name}</div><p style={{ fontSize: 13, margin: "8px 0" }}>{p.name} - {p.price} Pi - {p.cat}</p><button onClick={() => { setSelected(p); setColor("Black"); setSize("L"); }} style={{ background: "orange", width: "100%", padding: 10, borderRadius: 20, border: 0, fontWeight: "bold" }}>Add to Cart</button></div>))}
       </div>
-      {/* NO ADDRESS UNDER APP - REMOVED ON PURPOSE */}
-
       {selected && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}><div style={{ background: "#fff", color: "#000", padding: 20, borderRadius: 16, width: "90%", maxWidth: 360 }}><h3>{selected.name} - {selected.price} Pi</h3><p>Colour</p><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{COLORS.map((c) => (<button key={c} onClick={() => setColor(c)} style={{ padding: "8px 12px", borderRadius: 20, background: color === c ? "orange" : "#eee", border: 0 }}>{c}</button>))}</div><p>Size</p><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SIZES.map((s) => (<button key={s} onClick={() => setSize(s)} style={{ padding: "8px 12px", borderRadius: 20, background: size === s ? "orange" : "#eee", border: 0 }}>{s}</button>))}</div><button onClick={addToCart} style={{ background: "orange", width: "100%", padding: 12, borderRadius: 20, border: 0, fontWeight: "bold", marginTop: 16 }}>Add to Cart - {selected.price} Pi</button><button onClick={() => setSelected(null)} style={{ width: "100%", padding: 10, marginTop: 8, borderRadius: 20 }}>Close</button></div></div>)}
-
       {showCart && (<div style={{ position: "fixed", inset: 0, background: "#000", padding: 20, paddingBottom: 120, overflowY: "auto", zIndex: 60 }}>
         <h2>Your Cart</h2>
-        {cart.map((c, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#111", padding: 10, borderRadius: 10, marginBottom: 8 }}>
-            <span>{c.name} - {c.color} / {c.size} - {c.price} Pi x {c.qty}</span>
-            <button onClick={() => removeItem(i)} style={{ background: "red", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontWeight: "bold" }}>X</button>
-          </div>
-        ))}
+        {cart.length === 0 && <p style={{ background: "#222", padding: 12, borderRadius: 10 }}>Your cart is empty. Go back and add a product first.</p>}
+        {cart.map((c, i) => (<div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#111", padding: 10, borderRadius: 10, marginBottom: 8 }}><span>{c.name} - {c.color} / {c.size} - {c.price} Pi x {c.qty}</span><button onClick={() => removeItem(i)} style={{ background: "red", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontWeight: "bold" }}>X</button></div>))}
         <p><b>Total: {total.toFixed(2)} Pi</b></p>
         <h3>--- CHECKOUT DETAILS ---</h3>
         <input placeholder="Full Name *" value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 8, borderRadius: 10, boxSizing: "border-box" }} />
         <input placeholder="Phone Number / WhatsApp *" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 12, borderRadius: 10, boxSizing: "border-box" }} />
-        <div style={{ background: "#111", padding: 12, borderRadius: 12, marginBottom: 12, fontSize: 13, lineHeight: 1.6 }}>
-          <div>🏪 {PICKUP_INFO}</div><div style={{ marginTop: 6 }}>🚚 {DELIVERY_INFO}</div>
-        </div>
+        <div style={{ background: "#111", padding: 12, borderRadius: 12, marginBottom: 12, fontSize: 13, lineHeight: 1.6 }}><div>🏪 {PICKUP_INFO}</div><div style={{ marginTop: 6 }}>🚚 {DELIVERY_INFO}</div></div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setMethod("delivery")} style={{ flex: 1, padding: 12, borderRadius: 20, background: method === "delivery" ? "orange" : "#333", color: "#fff", border: 0, fontWeight: "bold" }}>🚚 Delivery (+0.0001 Pi)</button>
           <button onClick={() => setMethod("pickup")} style={{ flex: 1, padding: 12, borderRadius: 20, background: method === "pickup" ? "orange" : "#333", color: "#fff", border: 0, fontWeight: "bold" }}>🏪 Self Pickup (Free)</button>
         </div>
         {method === "delivery" ? (<textarea placeholder="Delivery Address - House No, Street, Area, City, State *" value={address} onChange={(e) => setAddress(e.target.value)} style={{ width: "100%", padding: 12, marginTop: 12, borderRadius: 10, minHeight: 70, boxSizing: "border-box" }} />) : (<div style={{ marginTop: 12 }}><p>Self Pickup Address:</p><select value={pickupPoint} onChange={(e) => setPickupPoint(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 10 }}><option value={PICKUP_ADDRESS}>{PICKUP_ADDRESS}</option></select><p style={{ fontSize: 13, background: "#222", padding: 10, borderRadius: 10, marginTop: 8 }}>🏪 Self Pickup (Free): {PICKUP_ADDRESS}<br/>Show your barcode at this pickup point.</p></div>)}
-        <p style={{ marginTop: 12 }}><b>Grand Total: {grandTotal.toFixed(4)} Pi</b> {method === "delivery" ? "(incl. delivery - 1-2 days Lagos, 4-7 days outside Lagos)" : "(self pickup free)"}</p>
-        <button onClick={pay} disabled={paying} style={{ background: paying ? "#888" : "orange", width: "100%", padding: 14, borderRadius: 20, border: 0, fontWeight: "bold", marginTop: 8 }}>{paying ? "Waiting for Wallet... Please approve in Wallet" : `Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
+        <div style={{ background: "#111", padding: 12, borderRadius: 12, marginTop: 12, fontSize: 13, lineHeight: 1.7 }}>
+          <div><b>Grand Total (to SOSA): {grandTotal.toFixed(4)} Pi</b> {method === "delivery" ? "(incl. delivery - 1-2 days Lagos, 4-7 days outside Lagos)" : "(self pickup free)"}</div>
+          <div>+ Pi Network Fee: 0.01 Pi (paid to Pi, NOT to SOSA)</div>
+          <div><b>Wallet will show: {walletTotal.toFixed(4)} Pi total</b> {cart.length === 0 ? "" : `( ${grandTotal.toFixed(4)} to SOSA + 0.01 Pi fee )`}</div>
+        </div>
+        <button onClick={pay} disabled={paying || cart.length === 0} style={{ background: cart.length === 0 ? "#555" : paying ? "#888" : "orange", color: cart.length === 0 ? "#aaa" : "#000", width: "100%", padding: 14, borderRadius: 20, border: 0, fontWeight: "bold", marginTop: 8 }}>{cart.length === 0 ? "Cart is empty - Add a product first" : paying ? "Waiting for Wallet... Please approve in Wallet" : `Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
         {paying && <p style={{ textAlign: "center", color: "orange", fontSize: 13 }}>⏳ Waiting for Wallet approval... Do NOT tap Pay again</p>}
-        <button onClick={payBarcode} style={{ background: "#333", color: "#fff", width: "100%", padding: 14, borderRadius: 20, border: 0, marginTop: 8 }}>Pay with Barcode at Pickup</button>
+        <button onClick={payBarcode} disabled={cart.length === 0} style={{ background: cart.length === 0 ? "#222" : "#333", color: cart.length === 0 ? "#888" : "#fff", width: "100%", padding: 14, borderRadius: 20, border: 0, marginTop: 8 }}>Pay with Barcode at Pickup</button>
         <button onClick={() => setShowCart(false)} style={{ width: "100%", padding: 12, borderRadius: 20, marginTop: 8 }}>Close Cart</button>
       </div>)}
     </div>
