@@ -84,10 +84,9 @@ export default function Home() {
   };
 
   // Leaderboard: group by buyer
-    
   const myOrders = user ? orders.filter((o:any)=>o.buyer===user.username) : orders;
   const myPoints = myOrders.reduce((a:any,o:any)=>a+Number(o.total||0)*10,0);
-    const boardMap:any = {};
+  const boardMap:any = {};
   orders.forEach((o:any) => {
     if (!boardMap[o.buyer]) {
       boardMap[o.buyer] = { buyer: o.buyer, total: 0, orders: 0, points: 0 };
@@ -125,10 +124,16 @@ export default function Home() {
       </div>
     );
   };
+  return (
+  <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
     <h1>SOPHISTICATED SAMPLES</h1><p>SOSA-outfits. Made in Nigeria</p>
-    <p style={{color:"orange",fontSize:13}}>{sdkReady ? "Pi SDK Ready" : "Loading Pi..."} {user ? " @ " + user + " | " + myPoints.toFixed(1) + " pts" : ""}</p>
-<div style={{display:"flex",gap:8}}>
-{user ? <button onClick={()=>setUser(null)}>Logout</button> : <button onClick={()=>setUser(prompt("Enter your name") || "")}>Login</button>}
+    <p style={{color:"orange",fontSize:13}}>{sdkReady ? "Pi SDK Ready" : "Loading Pi..."} {user ? " @ " + user.username + " | " + myPoints.toFixed(1) + " pts" : ""}</p>
+    {status && <p style={{color:"orange",fontSize:13}}>{status}</p>}
+<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+{user ? <button onClick={()=>setUser(null)}>Logout</button> : <button onClick={login}>Login with Pi</button>}
+<button onClick={()=>{refreshOrders(); setShowCart(true);}}>Cart ({cart.length})</button>
+<button onClick={()=>{refreshOrders(); setShowOrders(true);}}>My Orders</button>
+<button onClick={()=>{refreshOrders(); setShowBoard(true);}}>Leaderboard</button>
 </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{PRODUCTS.map((p,i)=>(<div key={i} style={{background:"#111",borderRadius:12,padding:10,textAlign:"center"}}><div style={{background:"#eee",color:"#000",padding:18,borderRadius:8,fontWeight:"bold"}}>{p.name}</div><p style={{fontSize:13,margin:"8px 0"}}>{p.name} - {p.price} Pi - {p.cat}</p><button onClick={()=>{setSelected(p); setColor("Black"); setSize("L");}} style={{background:"orange",width:"100%",padding:10,borderRadius:20,border:0,fontWeight:"bold"}}>Add to Cart</button></div>))}</div>
 
