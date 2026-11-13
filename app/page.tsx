@@ -84,9 +84,9 @@ export default function Home() {
   };
 
   // Leaderboard: group by buyer
-  const board = (()=>{ const m:any={}; orders.forEach((o:any)=>{ if(!m[o.buyer]) m[o.buyer]={buyer:o.buyer,total:0,orders:0,points:0}; m[o.buyer].total+=Number(o.total||0); m[o.buyer].orders+=1; m[o.buyer].points+=Number(o.points||0); }); return Object.values(m).sort((a:any,b:any)=>b.total-a.total); })();
-  const myOrders = user ? orders.filter((o:any)=>o.buyer===user.username) : orders;
-  const myPoints = myOrders.reduce((a:any,o:any)=>a+Number(o.total||0)*10,0);
+  const board = (()=>{ const m:any={}; orders.forEach((o:any)=>{ if(!m[o.buyer]) m[o.buyer]={buyer:o.buyer,total:0,orders:0,points:0}; m[o.buyer].total+=Number(o.total||0); m[o.buyer].orders+=1; m[o.buyer].points+=Number(o.total||0)*10; }); return Object.values(m).sort((a:any,b:any)=>b.total-a.total); })();
+const myOrders = user ? orders.filter((o:any)=>o.buyer===user.username) : orders;
+const myPoints = myOrders.reduce((a:any,o:any)=>a+Number(o.total||0)*10,0);
 const Track = ({tracking}:{tracking:string}) => { const steps=["Paid","Sent","Delivered"]; const idx = tracking==="Pending - Pay at Pickup"?-1 : tracking==="Sent"?1 : tracking==="Delivered"?2 : 0; return ...
   return (<div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
     <h1>SOPHISTICATED SAMPLES</h1><p>SOSA-outfits. Made in Nigeria</p>
