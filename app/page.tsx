@@ -84,11 +84,25 @@ export default function Home() {
   };
 
   // Leaderboard: group by buyer
-  const board = (()=>{ const m:any={}; orders.forEach((o:any)=>{ if(!m[o.buyer]) m[o.buyer]={buyer:o.buyer,total:0,orders:0,points:0}; m[o.buyer].total+=Number(o.total||0); m[o.buyer].orders+=1; m[o.buyer].points+=Number(o.total||0)*10; }); return Object.values(m).sort((a:any,b:any)=>b.total-a.total); })();
-const myOrders = user ? orders.filter((o:any)=>o.buyer===user.username) : orders;
-const myPoints = myOrders.reduce((a:any,o:any)=>a+Number(o.total||0)*10,0);
-const Track = ({tracking}:{tracking:string}) => { const steps=["Paid","Sent","Delivered"]; const idx = tracking==="Pending - Pay at Pickup"?-1 : tracking==="Sent"?1 : tracking==="Delivered"?2 : 0; return ...
-  return (<div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
+    const boardMap:any = {};
+  orders.forEach((o:any)=>{
+    if(!boardMap[o.buyer]) boardMap[o.buyer]={buyer:o.buyer,total:0,orders:0,points:0};
+    boardMap[o.buyer].total += Number(o.total||0);
+    boardMap[o.buyer].orders += 1;
+    boardMap[o.buyer].points += Number(o.total||0)*10;
+  });
+  const board:any[] = Object.values(boardMap);
+  board.sort((a:any,b:any)=>b.total-a.total);
+  const myOrders = user ? orders.filter((o:any)=>o.buyer===user.username) : orders;
+  const myPoints = myOrders.reduce((a:any,o:any)=>a+Number(o.total||0)*10,0);
+  const Track = ({tracking}:{tracking:string}) => {
+    const steps = ["Paid","Sent","Delivered"];
+    let idx = 0;
+    if(tracking==="Pending - Pay at Pickup") idx = -1;
+    if(tracking==="Sent") idx = 1;
+    if(tracking==="Delivered") idx = 2;
+    return (<div style={{display:"flex",gap:6,marginTop:8}}>{steps.map((s,i)=>(<span key={s} style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:20,fontSize:11,fontWeight:"bold",background: i<=idx?"#16a34a":"#333",color:"#fff"}}>{i<=idx?"YES ":"NO "}{s}</span>))}</div>);
+  };
     <h1>SOPHISTICATED SAMPLES</h1><p>SOSA-outfits. Made in Nigeria</p>
     <p style={{color:"orange",fontSize:13}}>{sdkReady?"Pi SDK Ready":"Loading Pi..."} {user?`| @${user.username} | ⭐ ${myPoints.toFixed(1)} pts`:""} {status?`| ${status}`:""}</p>
     <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
