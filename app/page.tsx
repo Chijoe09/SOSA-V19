@@ -7,7 +7,8 @@ SOSA MEMORY - DO NOT DELETE:
 - Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)
 - Cart: (X) must remove ONLY that 1 item - e.g. 11 items -> tap X -> 10 remain
 - History: save to sosa_orders, Admin shows Total Records + Total Pi
-- Save order ONLY in onReadyForServerCompletion after Wallet confirms
+- Save order + clear cart ONLY in onReadyForServerCompletion AFTER Wallet says Payment succeeded!
+- NEVER show "Payment finished / Payment SUCCESS" after await Pi.createPayment - that fires BEFORE approval
 - Memo: Name | Phone | PICKUP/DELIVERY address
 - Parked: Leaderboard, Rewards 1Pi=10pts, New Arrivals, Follow, Share, SOSA-Social
 */
@@ -68,6 +69,7 @@ export default function Home() {
   const [address, setAddress] = useState("");
   const [pickupPoint, setPickupPoint] = useState(PICKUP_ADDRESS);
   const [status, setStatus] = useState("");
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     const s = document.createElement("script");
@@ -97,7 +99,9 @@ export default function Home() {
     const old = JSON.parse(localStorage.getItem("sosa_orders") || "[]"); old.unshift(order); localStorage.setItem("sosa_orders", JSON.stringify(old));
   };
 
+  // FIXED PAY - No early popup, clear cart ONLY after Wallet confirms
   const pay = async () => {
+    if (paying) return;
     if (cart.length === 0) return alert("Cart is empty");
     if (!fullName || !phone) return alert("Please enter your Full Name and Phone Number first");
     if (method === "delivery" && !address) return alert("Please enter your Delivery Address");
@@ -105,17 +109,39 @@ export default function Home() {
     const Pi = getPi(); if (!Pi) return alert("Pi SDK not ready");
     const snap = { cart: [...cart], name: fullName, phone, method, address, pickupPoint, grandTotal, buyer: user.username };
     const memo = `SOSA Order - ${cart.map((c) => c.name).join(", ")} | ${fullName} | ${phone} | ${method === "delivery" ? "DELIVERY: " + address : "PICKUP: " + pickupPoint}`;
-    let saved = false;
+    setPaying(true);
+    setStatus("Waiting for Wallet approval... Do NOT close");
     try {
-      await Pi.createPayment({ amount: grandTotal, memo: memo.slice(0, 200), metadata: { name: fullName, phone, method, address: method === "delivery" ? address : pickupPoint } },
+      await Pi.createPayment(
+        { amount: grandTotal, memo: memo.slice(0, 200), metadata: { name: fullName, phone, method, address: method === "delivery" ? address : pickupPoint } },
         {
-          onReadyForServerApproval: (paymentId: string) => fetch("/api/pi/approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) }),
-          onReadyForServerCompletion: (paymentId: string, txid: string) => { if (!saved) { saved = true; saveOrder(txid, "", snap); } return fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }); },
-          onCancel: () => alert("Payment cancelled"), onError: (e: any) => alert("Payment error: " + e.message),
+          onReadyForServerApproval: (paymentId: string) => {
+            setStatus("Payment approved by Pi, waiting for Wallet...");
+            return fetch("/api/pi/approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+          },
+          onReadyForServerCompletion: (paymentId: string, txid: string) => {
+            // ONLY HERE - after Wallet says Payment succeeded!
+            saveOrder(txid, "", snap);
+            setCart([]);
+            setShowCart(false);
+            setPaying(false);
+            setStatus("");
+            alert("Payment SUCCESS! Order saved. We will contact you on " + phone);
+            return fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
+          },
+          onCancel: () => { setPaying(false); setStatus(""); alert("Payment cancelled - no money taken"); },
+          onError: (e: any) => { setPaying(false); setStatus(""); alert("Payment error: " + e.message); },
           onIncompletePaymentFound: (p: any) => { fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: p.paymentId, txid: p.transaction?.txid }) }); },
-        });
-      if (saved) { setCart([]); setShowCart(false); alert("Payment SUCCESS! Order saved. We will contact you on " + phone); } else { alert("Payment finished. Please check Admin History."); }
-    } catch (e: any) { alert(e.message); }
+        }
+      );
+      // NO ALERT HERE - we wait for onReadyForServerCompletion. If Wallet was closed without paying, onCancel handles it.
+      // Safety timeout: if Pi never calls back in 60s, unlock button
+      setTimeout(() => { setPaying((prev) => { if (prev) setStatus(""); return false; }); }, 60000);
+    } catch (e: any) {
+      setPaying(false); setStatus("");
+      if (e.message && e.message.toLowerCase().includes("cancel")) alert("Payment cancelled");
+      else alert(e.message);
+    }
   };
 
   const payBarcode = () => {
@@ -143,7 +169,7 @@ export default function Home() {
 
       {selected && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}><div style={{ background: "#fff", color: "#000", padding: 20, borderRadius: 16, width: "90%", maxWidth: 360 }}><h3>{selected.name} - {selected.price} Pi</h3><p>Colour</p><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{COLORS.map((c) => (<button key={c} onClick={() => setColor(c)} style={{ padding: "8px 12px", borderRadius: 20, background: color === c ? "orange" : "#eee", border: 0 }}>{c}</button>))}</div><p>Size</p><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SIZES.map((s) => (<button key={s} onClick={() => setSize(s)} style={{ padding: "8px 12px", borderRadius: 20, background: size === s ? "orange" : "#eee", border: 0 }}>{s}</button>))}</div><button onClick={addToCart} style={{ background: "orange", width: "100%", padding: 12, borderRadius: 20, border: 0, fontWeight: "bold", marginTop: 16 }}>Add to Cart - {selected.price} Pi</button><button onClick={() => setSelected(null)} style={{ width: "100%", padding: 10, marginTop: 8, borderRadius: 20 }}>Close</button></div></div>)}
 
-      {showCart && (<div style={{ position: "fixed", inset: 0, background: "#000", padding: 20, overflowY: "auto", zIndex: 60 }}>
+      {showCart && (<div style={{ position: "fixed", inset: 0, background: "#000", padding: 20, paddingBottom: 120, overflowY: "auto", zIndex: 60 }}>
         <h2>Your Cart</h2>
         {cart.map((c, i) => (
           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#111", padding: 10, borderRadius: 10, marginBottom: 8 }}>
@@ -164,7 +190,8 @@ export default function Home() {
         </div>
         {method === "delivery" ? (<textarea placeholder="Delivery Address - House No, Street, Area, City, State *" value={address} onChange={(e) => setAddress(e.target.value)} style={{ width: "100%", padding: 12, marginTop: 12, borderRadius: 10, minHeight: 70, boxSizing: "border-box" }} />) : (<div style={{ marginTop: 12 }}><p>Self Pickup Address:</p><select value={pickupPoint} onChange={(e) => setPickupPoint(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 10 }}><option value={PICKUP_ADDRESS}>{PICKUP_ADDRESS}</option></select><p style={{ fontSize: 13, background: "#222", padding: 10, borderRadius: 10, marginTop: 8 }}>🏪 Self Pickup (Free): {PICKUP_ADDRESS}<br/>Show your barcode at this pickup point.</p></div>)}
         <p style={{ marginTop: 12 }}><b>Grand Total: {grandTotal.toFixed(4)} Pi</b> {method === "delivery" ? "(incl. delivery - 1-2 days Lagos, 4-7 days outside Lagos)" : "(self pickup free)"}</p>
-        <button onClick={pay} style={{ background: "orange", width: "100%", padding: 14, borderRadius: 20, border: 0, fontWeight: "bold", marginTop: 8 }}>Pay with Pi - {grandTotal.toFixed(4)} Pi</button>
+        <button onClick={pay} disabled={paying} style={{ background: paying ? "#888" : "orange", width: "100%", padding: 14, borderRadius: 20, border: 0, fontWeight: "bold", marginTop: 8 }}>{paying ? "Waiting for Wallet... Please approve in Wallet" : `Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
+        {paying && <p style={{ textAlign: "center", color: "orange", fontSize: 13 }}>⏳ Waiting for Wallet approval... Do NOT tap Pay again</p>}
         <button onClick={payBarcode} style={{ background: "#333", color: "#fff", width: "100%", padding: 14, borderRadius: 20, border: 0, marginTop: 8 }}>Pay with Barcode at Pickup</button>
         <button onClick={() => setShowCart(false)} style={{ width: "100%", padding: 12, borderRadius: 20, marginTop: 8 }}>Close Cart</button>
       </div>)}
