@@ -127,9 +127,9 @@ export default function Home() {
   };
     <h1>SOPHISTICATED SAMPLES</h1><p>SOSA-outfits. Made in Nigeria</p>
     <p style={{color:"orange",fontSize:13}}>{sdkReady ? "Pi SDK Ready" : "Loading Pi..."} {user ? " | @" + user.username + " | " + myPoints.toFixed(1) + " pts" : ""} {status ? " | " + status : ""}</p>
-    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-      {user?(<button onClick={()=>setUser(null)} style={{background:"orange",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>Logout @{user.username}</button>):(<button onClick={login} style={{background:"orange",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>Login with Pi</button>)}
-      <button onClick={()=>setShowCart(true)} style={{background:"#fff",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>Cart ({cart.length}) - {total.toFixed(2)} Pi</button>
+   <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+{user ? <button onClick={()=>setUser(null)} style={{background:"orange",padding:"10px 14px",borderRadius:8,border:"none",fontWeight:"bold",cursor:"pointer"}}>Logout {user}</button> : <button onClick={()=>{const n=prompt("Enter your name"); if(n) setUser(n)}} style={{background:"#111",color:"#fff",padding:"10px 14px",borderRadius:8,border:"none",fontWeight:"bold",cursor:"pointer"}}>Login</button>}
+</div>
       <button onClick={()=>{refreshOrders(); setShowOrders(true);}} style={{background:"#16a34a",color:"#fff",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>📦 My Orders / Tracking</button>
       <button onClick={()=>{refreshOrders(); setShowBoard(true);}} style={{background:"#eab308",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>🏆 Leaderboard</button>
       <a href="/admin" style={{background:"#333",color:"#fff",padding:"10px 12px",borderRadius:20,textDecoration:"none",fontSize:13}}>Admin / Orders</a>
