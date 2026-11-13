@@ -104,7 +104,7 @@ export default function Home() {
     return (<div style={{display:"flex",gap:6,marginTop:8}}>{steps.map((s,i)=>(<span key={s} style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:20,fontSize:11,fontWeight:"bold",background: i<=idx?"#16a34a":"#333",color:"#fff"}}>{i<=idx?"YES ":"NO "}{s}</span>))}</div>);
   };
     <h1>SOPHISTICATED SAMPLES</h1><p>SOSA-outfits. Made in Nigeria</p>
-    <p style={{color:"orange",fontSize:13}}>{sdkReady?"Pi SDK Ready":"Loading Pi..."} {user?`| @${user.username} | ⭐ ${myPoints.toFixed(1)} pts`:""} {status?`| ${status}`:""}</p>
+    <p style={{color:"orange",fontSize:13}}>{sdkReady ? "Pi SDK Ready" : "Loading Pi..."} {user ? " | @" + user.username + " | " + myPoints.toFixed(1) + " pts" : ""} {status ? " | " + status : ""}</p>
     <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
       {user?(<button onClick={()=>setUser(null)} style={{background:"orange",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>Logout @{user.username}</button>):(<button onClick={login} style={{background:"orange",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>Login with Pi</button>)}
       <button onClick={()=>setShowCart(true)} style={{background:"#fff",padding:"10px 16px",borderRadius:20,border:0,fontWeight:"bold"}}>Cart ({cart.length}) - {total.toFixed(2)} Pi</button>
