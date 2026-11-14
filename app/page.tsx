@@ -29,7 +29,7 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-// FIX: Heel was drawn WRONG - mushroom shape. Now REAL side-profile heel.
+// Heel = CORRECTED side-profile, Flat & Slide also fixed, single draw only
 function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boolean }){
   const fill = color==="Brown" ? "#8B4513" : "#111111";
   const sole = color==="Brown" ? "#5C2E0E" : "#000000";
@@ -52,16 +52,11 @@ function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boo
       </svg>
     );
   }
-  // HEEL - CORRECTED: toe left, arch middle, stiletto heel right
   return (
     <svg width={size} height={size*0.75} viewBox="0 0 200 150">
-      {/* Main heel body - side profile */}
       <path d="M12 98 C18 78 35 68 55 62 C75 56 95 52 110 44 C125 36 138 28 150 22 C158 18 168 18 170 26 C172 36 168 48 158 58 C148 68 138 76 128 82 L128 122 L114 122 L114 88 C90 96 45 104 12 98 Z" fill={fill} />
-      {/* Sole */}
       <path d="M10 98 C45 106 90 98 114 88 L114 96 C90 106 45 114 10 106 Z" fill={sole} />
-      {/* Heel tip */}
       <rect x="112" y="122" width="16" height="7" rx="2" fill={sole} />
-      {/* Shine */}
       <path d="M30 88 C40 76 55 70 70 66" stroke="#fff" strokeWidth="3" fill="none" opacity="0.25" strokeLinecap="round" />
     </svg>
   );
@@ -253,29 +248,36 @@ export default function Home(){
     setSelected(p);
     setDetailQty(1);
     setView("detail");
+    window.scrollTo(0,0);
+  };
+
+  const goShop = ()=>{
+    setView("shop");
+    window.scrollTo(0,0);
   };
 
   return (
-    <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
+    <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif",overflowX:"hidden"}}>
+      {/* FIX: NO sticky - sticky was causing ghost / double paint on Pi Browser scroll */}
       {view!=="shop" && (
-        <div style={{position:"sticky",top:0,zIndex:50,background:"#000",padding:"8px 0",marginBottom:8}}>
-          <button onClick={()=>setView("shop")} style={{padding:"10px 16px",borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
+        <div style={{background:"#000",padding:"8px 0",marginBottom:8}}>
+          <button onClick={goShop} style={{padding:"10px 16px",borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
         </div>
       )}
 
-      <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1}}>SOPHISTICATED<br/>SAMPLES</h1>
-      <p>SOSA-outfits. Made in Nigeria</p>
-      <p style={{color:"orange",fontSize:13}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
+      <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1,margin:0}}>SOPHISTICATED<br/>SAMPLES</h1>
+      <p style={{margin:"8px 0"}}>SOSA-outfits. Made in Nigeria</p>
+      <p style={{color:"orange",fontSize:13,margin:"0 0 12px 0"}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
 
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
         {!user ? (
-          <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Login with Pi</button>
+          <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>Login with Pi</button>
         ) : (
-          <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Logout</button>
+          <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>Logout</button>
         )}
-        <button onClick={()=>{reloadOrders(); setView("cart");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cartCount})</button>
-        <button onClick={()=>{reloadOrders(); setView("orders");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
-        <button onClick={()=>setView("leader")} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold"}}>🏆 Leadership Board</button>
+        <button onClick={()=>{reloadOrders(); setView("cart"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>Cart ({cartCount})</button>
+        <button onClick={()=>{reloadOrders(); setView("orders"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>My Orders</button>
+        <button onClick={()=>{setView("leader"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold",border:0}}>🏆 Leadership Board</button>
       </div>
 
       {view==="leader" && (
@@ -296,24 +298,25 @@ export default function Home(){
       {view==="shop" && (
         <div>
           <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy.</p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {/* FIX: Fixed card height + overflow hidden + clear gap - cards cannot overlap */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
             {PRODUCTS.map((p:any,i:number)=>{
               const col = selColor[p.name] || "Black";
               return (
-                <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
-                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
-                    <div style={{background:"#f5f5f5",borderRadius:10,padding:10,display:"flex",justifyContent:"center"}}>
+                <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center",overflow:"hidden",minHeight:260,display:"flex",flexDirection:"column"}}>
+                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer",flex:1}}>
+                    <div style={{background:"#f5f5f5",borderRadius:10,padding:10,display:"flex",justifyContent:"center",height:90,alignItems:"center",overflow:"hidden"}}>
                       <ShoeIcon cat={p.cat} color={col} />
                     </div>
-                    <b>{p.name}</b><br/>
-                    <span style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi</span><br/>
-                    <span style={{fontSize:11,color:"#666"}}>{p.cat} • Colour: {col} • Tap to see 👁️</span>
+                    <div style={{fontWeight:"bold",marginTop:6}}>{p.name}</div>
+                    <div style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi</div>
+                    <div style={{fontSize:11,color:"#666"}}>{p.cat} • Colour: {col}</div>
                   </div>
                   <div style={{display:"flex",gap:4,marginTop:8}}>
-                    <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                    <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd",minWidth:0}}>
                       <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
                     </select>
-                    <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                    <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd",minWidth:0}}>
                       <option value="Black">Black</option><option value="Brown">Brown</option>
                     </select>
                   </div>
@@ -331,9 +334,9 @@ export default function Home(){
       )}
 
       {view==="detail" && selected && (
-        <div style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
+        <div key={selected.name + (selColor[selected.name]||"Black")} style={{background:"#fff",color:"#000",borderRadius:12,padding:16,overflow:"hidden"}}>
           <div style={{textAlign:"center",margin:"8px 0"}}>
-            <div style={{background:"#f5f5f5",borderRadius:16,padding:20,display:"flex",justifyContent:"center"}}>
+            <div style={{background:"#f5f5f5",borderRadius:16,padding:20,display:"flex",justifyContent:"center",height:180,alignItems:"center",overflow:"hidden"}}>
               <ShoeIcon cat={selected.cat} color={selColor[selected.name]||"Black"} big={true} />
             </div>
             <div style={{fontSize:11,color:"#888",marginTop:8}}>📸 Real photo coming soon - send your product photos to replace this drawing</div>
@@ -363,8 +366,8 @@ export default function Home(){
             <button onClick={()=>setDetailQty(detailQty+1)} style={{padding:"8px 16px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",fontSize:18}}>+</button>
             <b style={{marginLeft:"auto"}}>Total: {(selected.price*detailQty).toFixed(4)} Pi</b>
           </div>
-          <button onClick={()=>{addToCart(selected,detailQty); setView("cart");}} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginTop:12}}>Add to Cart - {(selected.price*detailQty).toFixed(4)} Pi</button>
-          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#eee",border:0,marginTop:8}}>← Continue Shopping</button>
+          <button onClick={()=>{addToCart(selected,detailQty); setView("cart"); window.scrollTo(0,0);}} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginTop:12}}>Add to Cart - {(selected.price*detailQty).toFixed(4)} Pi</button>
+          <button onClick={goShop} style={{width:"100%",padding:12,borderRadius:10,background:"#eee",border:0,marginTop:8}}>← Continue Shopping</button>
         </div>
       )}
 
@@ -376,7 +379,7 @@ export default function Home(){
             const f = getFlags(o);
             const statusText = f.delivered ? "Delivered" : f.sent ? "Sent" : f.paid ? "Paid" : "Pending - Pay at Pickup";
             return (
-              <div key={i} style={{background:"#fff",color:"#000",padding:12,borderRadius:12,marginTop:10}}>
+              <div key={i} style={{background:"#fff",color:"#000",padding:12,borderRadius:12,marginTop:10,overflow:"hidden"}}>
                 <b>{o.id}</b><br/>{o.date}<br/>Items: {o.items}<br/>Total: {o.total} Pi<br/>Phone: {fmtPhone(o.phone)}<br/>
                 Status: <b style={{color: f.delivered||f.paid ? "#16a34a" : "orange"}}>{statusText}</b><br/>
                 <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -391,11 +394,11 @@ export default function Home(){
       )}
 
       {view==="cart" && (
-        <div style={{background:"#111",padding:12,borderRadius:12}}>
+        <div style={{background:"#111",padding:12,borderRadius:12,overflow:"hidden"}}>
           <h2 style={{marginTop:0}}>Cart ({cartCount})</h2>
           {cart.length===0 && <p>Cart is empty. Go add a product.</p>}
           {cart.map((c:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8}}>
+            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8,overflow:"hidden"}}>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <ShoeIcon cat={c.cat || "Heel"} color={c.color} />
                 <div style={{flex:1}}>
@@ -412,8 +415,8 @@ export default function Home(){
           ))}
           <p>Total: {total.toFixed(4)} Pi</p>
           <h3>--- CHECKOUT DETAILS ---</h3>
-          <input placeholder="Full Name *" value={custName} onChange={(e)=>setCustName(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0}} />
-          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone Number / WhatsApp *" value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g, ""))} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0}} />
+          <input placeholder="Full Name *" value={custName} onChange={(e)=>setCustName(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0,boxSizing:"border-box"}} />
+          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone Number / WhatsApp *" value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g, ""))} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0,boxSizing:"border-box"}} />
           <p style={{fontSize:11,color:"#aaa",marginTop:-4}}>Example: 08176675579 or +2348176675579 — numbers only</p>
           <div style={{background:"#222",padding:10,borderRadius:10,fontSize:12,marginBottom:8}}>🏠 Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.<br/>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -421,12 +424,12 @@ export default function Home(){
             <button onClick={()=>setMethod("pickup")} style={{flex:1,padding:12,borderRadius:20,background:method==="pickup"?"orange":"#333",color:"#fff",border:0,fontWeight:"bold"}}>🏠 Self Pickup (Free)</button>
           </div>
           <p>Self Pickup Address:</p>
-          <input value={method==="pickup"?"No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.":address} onChange={(e)=>setAddress(e.target.value)} disabled={method==="pickup"} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8}} />
+          <input value={method==="pickup"?"No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.":address} onChange={(e)=>setAddress(e.target.value)} disabled={method==="pickup"} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,boxSizing:"border-box"}} />
           <p>Grand Total (SOSA): {total.toFixed(4)} Pi {method==="delivery"?"+ 0.0001 delivery":"(self pickup free)"}<br/>+ Pi Network Fee: 0.01 Pi (paid to Pi, NOT SOSA)<br/>Wallet will show: {(grandTotal+0.01).toFixed(4)} Pi total</p>
           <button onClick={payWithPi} disabled={paying} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginBottom:8}}>{paying?"Waiting for Wallet approval... DO NOT tap Pay again":`Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
           <button onClick={payWithBarcode} style={{width:"100%",padding:14,borderRadius:20,background:"#fff",color:"#000",border:0,fontWeight:"bold"}}>Pay with Barcode at Pickup — Pay when you come to shop. Show barcode.</button>
           <p style={{fontSize:12,textAlign:"center"}}>Barcode = Reserve now, pay at pickup. No Pi taken now.</p>
-          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,marginTop:8}}>← Back to Shop</button>
+          <button onClick={goShop} style={{width:"100%",padding:12,borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,marginTop:8}}>← Back to Shop</button>
         </div>
       )}
     </div>
