@@ -10,7 +10,17 @@ function fmtPhone(p: any){
   return raw;
 }
 
-// ===== ALL PRODUCTS - 15 TOTAL =====
+// FIX 2: My Orders - read old tracking so green light shows
+function getFlags(o:any){
+  if(o.paid!==undefined || o.sent!==undefined || o.delivered!==undefined) return { paid: !!o.paid, sent: !!o.sent, delivered: !!o.delivered };
+  const t = o.tracking || "";
+  if(t==="Delivered") return { paid:true, sent:true, delivered:true };
+  if(t==="Sent") return { paid:true, sent:true, delivered:false };
+  if(t==="Paid") return { paid:true, sent:false, delivered:false };
+  if(t==="Pending - Pay at Pickup") return { paid:false, sent:false, delivered:false };
+  return { paid: !!o.paid, sent: !!o.sent, delivered: !!o.delivered };
+}
+
 const PRODUCTS = [
   { name: "Classic Heel", price: 0.05, cat: "Footwear" },
   { name: "Royal Heel", price: 0.04, cat: "Footwear" },
@@ -142,17 +152,21 @@ export default function Home(){
       {showOrders && (
         <div><h2>My Orders</h2><button onClick={()=>setShowOrders(false)} style={{padding:8,borderRadius:8}}>← Back</button>
           {orders.length===0 && <p>No orders yet.</p>}
-          {orders.map((o:any,i:number)=>(
+          {orders.map((o:any,i:number)=>{
+            const f = getFlags(o);
+            const statusText = f.delivered ? "Delivered" : f.sent ? "Sent" : f.paid ? "Paid" : "Pending - Pay at Pickup";
+            return (
             <div key={i} style={{background:"#fff",color:"#000",padding:12,borderRadius:12,marginTop:10}}>
               <b>{o.id}</b><br/>{o.date}<br/>Items: {o.items}<br/>Total: {o.total} Pi<br/>Phone: {fmtPhone(o.phone)}<br/>
-              Status: <b>{o.delivered?"Delivered":o.sent?"Sent":o.paid?"Paid":"Pending - Pay at Pickup"}</b><br/>
+              Status: <b style={{color: f.delivered||f.paid?"#16a34a":"orange"}}>{statusText}</b><br/>
               <div style={{display:"flex",gap:6,marginTop:8}}>
-                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:o.paid?"#16a34a":"#333",color:"#fff",fontSize:11}}>{o.paid?"✅ ":"⚪ "}Paid</span>
-                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:o.sent?"#16a34a":"#333",color:"#fff",fontSize:11}}>{o.sent?"✅ ":"⚪ "}Sent</span>
-                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:o.delivered?"#16a34a":"#333",color:"#fff",fontSize:11}}>{o.delivered?"✅ ":"⚪ "}Delivered</span>
+                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:f.paid?"#16a34a":"#333",color:"#fff",fontSize:11}}>{f.paid?"✅ ":"⚪ "}Paid</span>
+                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:f.sent?"#16a34a":"#333",color:"#fff",fontSize:11}}>{f.sent?"✅ ":"⚪ "}Sent</span>
+                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:f.delivered?"#16a34a":"#333",color:"#fff",fontSize:11}}>{f.delivered?"✅ ":"⚪ "}Delivered</span>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
