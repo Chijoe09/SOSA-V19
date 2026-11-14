@@ -16,14 +16,9 @@ function fmtPhone(p: any){
   return raw;
 }
 
-// FIX: Same rule as Admin - Delivered = all green, so it STAYS green
 function getFlags(o:any){
-  if(o.delivered){
-    return { paid:true, sent:true, delivered:true };
-  }
-  if(o.sent){
-    return { paid: !!o.paid || o.tracking==="Sent", sent:true, delivered:false };
-  }
+  if(o.delivered) return { paid:true, sent:true, delivered:true };
+  if(o.sent) return { paid: !!o.paid || o.tracking==="Sent", sent:true, delivered:false };
   if(o.paid!==undefined || o.sent!==undefined || o.delivered!==undefined){
     return { paid: !!o.paid, sent: !!o.sent, delivered: !!o.delivered };
   }
@@ -55,9 +50,8 @@ const PRODUCTS = [
 export default function Home(){
   const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
-  const [showCart, setShowCart] = useState(false);
-  const [showOrders, setShowOrders] = useState(false);
-  const [showLeader, setShowLeader] = useState(false);
+  // FIX 1: ONE view only - shop / cart / orders / leader. Never overlap again.
+  const [view, setView] = useState("shop");
   const [orders, setOrders] = useState<any[]>([]);
   const [points, setPoints] = useState(0);
   const [custName, setCustName] = useState("");
@@ -65,8 +59,11 @@ export default function Home(){
   const [method, setMethod] = useState("pickup");
   const [address, setAddress] = useState("No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.");
   const [paying, setPaying] = useState(false);
+  // FIX 2: No more prompt() - size/color picked on the card itself
+  const [selSize, setSelSize] = useState<any>({});
+  const [selColor, setSelColor] = useState<any>({});
 
-  const reload = ()=>{
+  const reloadOrders = ()=>{
     try{
       const o = JSON.parse(localStorage.getItem("sosa_orders")||"[]");
       setOrders(o);
@@ -75,8 +72,13 @@ export default function Home(){
   };
 
   useEffect(()=>{
-    reload();
-    const h = ()=>reload();
+    reloadOrders();
+    // FIX 3: Cart saved - reload cart too, so it never shows 0.00 when Cart is (8)
+    try{
+      const c = JSON.parse(localStorage.getItem("sosa_cart")||"[]");
+      if(Array.isArray(c)) setCart(c);
+    }catch{}
+    const h = ()=>reloadOrders();
     window.addEventListener("storage", h);
     window.addEventListener("focus", h);
     const u = localStorage.getItem("sosa_user");
@@ -86,6 +88,11 @@ export default function Home(){
       window.removeEventListener("focus", h);
     };
   },[]);
+
+  const saveCart = (next:any[])=>{
+    setCart(next);
+    localStorage.setItem("sosa_cart", JSON.stringify(next));
+  };
 
   const saveOrders = (next:any[])=>{
     setOrders(next);
@@ -100,9 +107,10 @@ export default function Home(){
   };
 
   const addToCart = (p:any)=>{
-    const size = prompt("Choose size: S, M, L, XL, XXL","M") || "M";
-    const color = prompt("Choose color: Black / Brown","Black") || "Black";
-    setCart([...cart, { ...p, size, color, id: Date.now()+Math.random() }]);
+    const size = selSize[p.name] || "M";
+    const color = selColor[p.name] || "Black";
+    const next = [...cart, { ...p, size, color, id: Date.now()+Math.random() }];
+    saveCart(next);
   };
 
   const total = cart.reduce((a:any,c:any)=>a+Number(c.price||0),0);
@@ -151,8 +159,8 @@ export default function Home(){
     };
     const next = [order, ...orders];
     saveOrders(next);
-    setCart([]);
-    setShowCart(false);
+    saveCart([]);
+    setView("orders");
     alert(paid ? `Payment SUCCESS! Order saved. Tracking: Paid ✅ We will contact you on ${custPhone}` : `Barcode Order saved. Pay at pickup. We will contact you on ${custPhone}`);
   };
 
@@ -203,13 +211,13 @@ export default function Home(){
         ) : (
           <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Logout</button>
         )}
-        <button onClick={()=>{reload(); setShowCart(true); setShowOrders(false); setShowLeader(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cart.length})</button>
-        <button onClick={()=>{reload(); setShowOrders(true); setShowCart(false); setShowLeader(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
-        <button onClick={()=>{setShowLeader(true); setShowCart(false); setShowOrders(false);}} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold"}}>🏆 Leadership Board</button>
+        <button onClick={()=>{reloadOrders(); setView("cart");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cart.length})</button>
+        <button onClick={()=>{reloadOrders(); setView("orders");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
+        <button onClick={()=>setView("leader")} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold"}}>🏆 Leadership Board</button>
         <a href="/admin" style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",textDecoration:"none"}}>Admin</a>
       </div>
 
-      {showLeader && (
+      {view==="leader" && (
         <div style={{background:"#111",padding:12,borderRadius:12}}>
           <h2>🏆 SOSA Leadership Board</h2>
           <p style={{fontSize:12,color:"#aaa"}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
@@ -224,26 +232,34 @@ export default function Home(){
               <b style={{fontSize:18}}>⭐ {Number(l.points).toFixed(1)}</b>
             </div>
           ))}
-          <button onClick={()=>setShowLeader(false)} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>← Back to Shop</button>
+          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>← Back to Shop</button>
         </div>
       )}
 
-      {!showCart && !showOrders && !showLeader && (
+      {view==="shop" && (
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {PRODUCTS.map((p:any,i:number)=>(
             <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
               <b>{p.name}</b><br/>
               <span style={{fontSize:12}}>{p.name} - {p.price} Pi - {p.cat}</span><br/>
+              <div style={{display:"flex",gap:4,marginTop:8}}>
+                <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                  <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
+                </select>
+                <select value={selColor[p.name]||"Black"} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                  <option value="Black">Black</option><option value="Brown">Brown</option>
+                </select>
+              </div>
               <button onClick={()=>addToCart(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
             </div>
           ))}
         </div>
       )}
 
-      {showOrders && (
+      {view==="orders" && (
         <div>
           <h2>My Orders</h2>
-          <button onClick={()=>setShowOrders(false)} style={{padding:8,borderRadius:8}}>← Back</button>
+          <button onClick={()=>setView("shop")} style={{padding:8,borderRadius:8}}>← Back</button>
           {orders.length===0 && <p>No orders yet.</p>}
           {orders.map((o:any,i:number)=>{
             const f = getFlags(o);
@@ -267,16 +283,17 @@ export default function Home(){
         </div>
       )}
 
-      {showCart && (
+      {view==="cart" && (
         <div style={{background:"#111",padding:12,borderRadius:12}}>
-          <h2>Cart</h2>
+          <h2>Cart ({cart.length})</h2>
+          {cart.length===0 && <p>Cart is empty. Go add a product.</p>}
           {cart.map((c:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8,display:"flex",justifyContent:"space-between"}}>
+            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span>{c.name} - {c.color} / {c.size} - {c.price} Pi x 1</span>
-              <button onClick={()=>setCart(cart.filter((_:any,idx:number)=>idx!==i))} style={{background:"red",color:"#fff",border:0,borderRadius:50,padding:"2px 8px"}}>X</button>
+              <button onClick={()=>saveCart(cart.filter((_:any,idx:number)=>idx!==i))} style={{background:"red",color:"#fff",border:0,borderRadius:50,padding:"2px 8px"}}>X</button>
             </div>
           ))}
-          <p>Total: {total.toFixed(2)} Pi</p>
+          <p>Total: {total.toFixed(4)} Pi</p>
           <h3>--- CHECKOUT DETAILS ---</h3>
           <input placeholder="Full Name *" value={custName} onChange={(e)=>setCustName(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0}} />
           <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone Number / WhatsApp *" value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g, ""))} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0}} />
@@ -295,7 +312,7 @@ export default function Home(){
           <button onClick={payWithPi} disabled={paying} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginBottom:8}}>{paying?"Waiting for Wallet approval... DO NOT tap Pay again":`Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
           <button onClick={payWithBarcode} style={{width:"100%",padding:14,borderRadius:20,background:"#fff",color:"#000",border:0,fontWeight:"bold"}}>Pay with Barcode at Pickup — Pay when you come to shop. Show barcode.</button>
           <p style={{fontSize:12,textAlign:"center"}}>Barcode = Reserve now, pay at pickup. No Pi taken now.</p>
-          <button onClick={()=>setShowCart(false)} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>Close Cart</button>
+          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>Close Cart</button>
         </div>
       )}
     </div>
