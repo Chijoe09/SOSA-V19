@@ -29,35 +29,40 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-// FIX: Real SVG shoe - fill colour REALLY changes Black / Brown, not just background
+// FIX: Heel was drawn WRONG - mushroom shape. Now REAL side-profile heel.
 function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boolean }){
   const fill = color==="Brown" ? "#8B4513" : "#111111";
   const sole = color==="Brown" ? "#5C2E0E" : "#000000";
-  const size = big ? 140 : 72;
+  const size = big ? 170 : 84;
   if(cat==="Flat"){
     return (
-      <svg width={size} height={size*0.6} viewBox="0 0 120 70">
-        <path d="M10 50 Q20 20 45 18 L105 18 Q115 18 110 35 Q105 50 85 52 L20 55 Q8 55 10 50 Z" fill={fill} />
-        <rect x="8" y="52" width="105" height="8" rx="4" fill={sole} />
-        <circle cx="28" cy="30" r="6" fill="#fff" opacity="0.25" />
+      <svg width={size} height={size*0.55} viewBox="0 0 200 110">
+        <path d="M12 72 Q18 52 45 48 Q70 44 95 48 L165 52 Q188 54 182 68 Q176 82 145 84 L30 86 Q10 86 12 72 Z" fill={fill} />
+        <rect x="10" y="84" width="175" height="9" rx="4" fill={sole} />
+        <ellipse cx="45" cy="58" rx="12" ry="5" fill="#fff" opacity="0.2" />
       </svg>
     );
   }
   if(cat==="Slide"){
     return (
-      <svg width={size} height={size*0.6} viewBox="0 0 120 70">
-        <path d="M10 55 Q15 25 55 22 L110 30 Q115 38 100 45 L25 58 Q8 60 10 55 Z" fill={fill} />
-        <path d="M35 25 Q55 5 85 18 Q70 28 50 32 Q35 33 35 25 Z" fill={sole} />
-        <rect x="8" y="55" width="108" height="7" rx="3" fill={sole} />
+      <svg width={size} height={size*0.55} viewBox="0 0 200 110">
+        <path d="M12 78 Q25 62 70 60 L170 62 Q190 64 184 76 Q178 88 140 88 L30 88 Q8 88 12 78 Z" fill={fill} />
+        <path d="M55 60 Q70 28 115 28 Q135 30 140 48 Q115 44 95 50 Q70 58 55 60 Z" fill={sole} />
+        <rect x="10" y="86" width="178" height="9" rx="4" fill={sole} />
       </svg>
     );
   }
-  // Heel - default
+  // HEEL - CORRECTED: toe left, arch middle, stiletto heel right
   return (
-    <svg width={size} height={size*0.9} viewBox="0 0 120 110">
-      <path d="M15 75 Q20 35 45 30 L95 22 Q110 20 105 35 Q100 50 80 55 L60 62 L55 95 L42 95 L45 65 Q25 78 15 75 Z" fill={fill} />
-      <rect x="42" y="95" width="14" height="6" rx="2" fill={sole} />
-      <path d="M25 60 Q35 40 50 35" stroke="#fff" strokeWidth="3" fill="none" opacity="0.3" strokeLinecap="round" />
+    <svg width={size} height={size*0.75} viewBox="0 0 200 150">
+      {/* Main heel body - side profile */}
+      <path d="M12 98 C18 78 35 68 55 62 C75 56 95 52 110 44 C125 36 138 28 150 22 C158 18 168 18 170 26 C172 36 168 48 158 58 C148 68 138 76 128 82 L128 122 L114 122 L114 88 C90 96 45 104 12 98 Z" fill={fill} />
+      {/* Sole */}
+      <path d="M10 98 C45 106 90 98 114 88 L114 96 C90 106 45 114 10 106 Z" fill={sole} />
+      {/* Heel tip */}
+      <rect x="112" y="122" width="16" height="7" rx="2" fill={sole} />
+      {/* Shine */}
+      <path d="M30 88 C40 76 55 70 70 66" stroke="#fff" strokeWidth="3" fill="none" opacity="0.25" strokeLinecap="round" />
     </svg>
   );
 }
@@ -252,7 +257,6 @@ export default function Home(){
 
   return (
     <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
-      {/* FIX: STICKY Back - always at VERY TOP when not in shop, never scrolls away */}
       {view!=="shop" && (
         <div style={{position:"sticky",top:0,zIndex:50,background:"#000",padding:"8px 0",marginBottom:8}}>
           <button onClick={()=>setView("shop")} style={{padding:"10px 16px",borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
@@ -291,7 +295,7 @@ export default function Home(){
 
       {view==="shop" && (
         <div>
-          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy. Shoe colour REALLY changes now.</p>
+          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy.</p>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
             {PRODUCTS.map((p:any,i:number)=>{
               const col = selColor[p.name] || "Black";
