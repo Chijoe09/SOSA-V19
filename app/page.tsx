@@ -29,28 +29,31 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
+// FIX: Products now have photo placeholder + description, so customer SEES what they pay for
 const PRODUCTS = [
-  { name: "Classic Heel", price: 0.05, cat: "Footwear" },
-  { name: "Royal Heel", price: 0.04, cat: "Footwear" },
-  { name: "Lagos Heel", price: 0.03, cat: "Footwear" },
-  { name: "Executive Heel", price: 0.05, cat: "Footwear" },
-  { name: "Heritage Heel", price: 0.04, cat: "Footwear" },
-  { name: "Classic Flat", price: 0.05, cat: "Footwear" },
-  { name: "Royal Flat", price: 0.04, cat: "Footwear" },
-  { name: "Lagos Flat", price: 0.03, cat: "Footwear" },
-  { name: "Executive Flat", price: 0.05, cat: "Footwear" },
-  { name: "Heritage Flat", price: 0.04, cat: "Footwear" },
-  { name: "Classic Palm Slide", price: 0.04, cat: "Footwear" },
-  { name: "Royal Palm Slide", price: 0.04, cat: "Footwear" },
-  { name: "Lagos Palm Slide", price: 0.03, cat: "Footwear" },
-  { name: "Executive Palm Slide", price: 0.05, cat: "Footwear" },
-  { name: "Heritage Palm Slide", price: 0.04, cat: "Footwear" },
+  { name: "Classic Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria. Available in Black & Brown.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
+  { name: "Royal Heel", price: 0.04, cat: "Heel", emoji: "👠", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size." },
+  { name: "Lagos Heel", price: 0.03, cat: "Heel", emoji: "👠", desc: "Light Lagos everyday heel. Easy to walk in, strong & durable.", detail: "Heel height: Low-Medium. Best for daily use." },
+  { name: "Executive Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Sharp executive heel for office & meetings. Clean, classy finish.", detail: "Heel height: Medium. Office-ready, all-day comfort." },
+  { name: "Heritage Heel", price: 0.04, cat: "Heel", emoji: "👠", desc: "Heritage design with Nigerian style. Strong, beautiful, timeless.", detail: "Heritage collection. Durable sole, premium finish." },
+  { name: "Classic Flat", price: 0.05, cat: "Flat", emoji: "🥿", desc: "Classic flat for everyday comfort. Church, office, market - all day.", detail: "Flat sole. Soft inner. True to size." },
+  { name: "Royal Flat", price: 0.04, cat: "Flat", emoji: "🥿", desc: "Royal flat with soft cushion. Elegant but comfortable.", detail: "Flat sole. Cushioned insole." },
+  { name: "Lagos Flat", price: 0.03, cat: "Flat", emoji: "🥿", desc: "Light Lagos flat. Walk anywhere in Lagos with ease.", detail: "Lightweight, everyday flat." },
+  { name: "Executive Flat", price: 0.05, cat: "Flat", emoji: "🥿", desc: "Executive flat for work. Neat, professional, comfortable.", detail: "Office flat. All-day comfort." },
+  { name: "Heritage Flat", price: 0.04, cat: "Flat", emoji: "🥿", desc: "Heritage flat - Nigerian craft, modern comfort.", detail: "Heritage collection. Durable." },
+  { name: "Classic Palm Slide", price: 0.04, cat: "Slide", emoji: "🩴", desc: "Classic palm slide. Easy to wear, easy to wash, very comfortable.", detail: "Slide-on. No stress. Everyday wear." },
+  { name: "Royal Palm Slide", price: 0.04, cat: "Slide", emoji: "🩴", desc: "Royal palm slide - soft, classy, premium feel.", detail: "Soft sole, premium finish." },
+  { name: "Lagos Palm Slide", price: 0.03, cat: "Slide", emoji: "🩴", desc: "Lagos palm slide for home & street. Light & strong.", detail: "Everyday slide." },
+  { name: "Executive Palm Slide", price: 0.05, cat: "Slide", emoji: "🩴", desc: "Executive palm slide - clean look for smart casual.", detail: "Smart casual slide." },
+  { name: "Heritage Palm Slide", price: 0.04, cat: "Slide", emoji: "🩴", desc: "Heritage palm slide - our signature Nigerian slide.", detail: "Heritage collection. Signature design." },
 ];
 
 export default function Home(){
   const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
   const [view, setView] = useState("shop");
+  const [selected, setSelected] = useState<any>(null);
+  const [detailQty, setDetailQty] = useState(1);
   const [orders, setOrders] = useState<any[]>([]);
   const [points, setPoints] = useState(0);
   const [custName, setCustName] = useState("");
@@ -103,14 +106,14 @@ export default function Home(){
     localStorage.setItem("sosa_user", JSON.stringify(u));
   };
 
-  const addToCart = (p:any)=>{
+  const addToCart = (p:any, qty:number=1)=>{
     const size = selSize[p.name] || "M";
     const color = selColor[p.name] || "Black";
     const found = cart.find((c:any)=>c.name===p.name && c.size===size && c.color===color);
     if(found){
-      saveCart(cart.map((c:any)=> c===found ? { ...c, qty: (c.qty||1)+1 } : c));
+      saveCart(cart.map((c:any)=> c===found ? { ...c, qty: (c.qty||1)+qty } : c));
     } else {
-      saveCart([...cart, { ...p, size, color, qty: 1, id: Date.now()+Math.random() }]);
+      saveCart([...cart, { ...p, size, color, qty: qty, id: Date.now()+Math.random() }]);
     }
   };
 
@@ -209,6 +212,12 @@ export default function Home(){
     createOrder(false, "BARCODE-"+Date.now());
   };
 
+  const openDetail = (p:any)=>{
+    setSelected(p);
+    setDetailQty(1);
+    setView("detail");
+  };
+
   return (
     <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
       <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1}}>SOPHISTICATED<br/>SAMPLES</h1>
@@ -243,21 +252,65 @@ export default function Home(){
       )}
 
       {view==="shop" && (
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {PRODUCTS.map((p:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
-              <b>{p.name}</b><br/><span style={{fontSize:12}}>{p.name} - {p.price} Pi - {p.cat}</span><br/>
-              <div style={{display:"flex",gap:4,marginTop:8}}>
-                <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
-                  <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
-                </select>
-                <select value={selColor[p.name]||"Black"} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
-                  <option value="Black">Black</option><option value="Brown">Brown</option>
-                </select>
+        <div>
+          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy. Don't buy blind.</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {PRODUCTS.map((p:any,i:number)=>(
+              <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
+                <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
+                  <div style={{fontSize:52,lineHeight:1}}>{p.emoji}</div>
+                  <b>{p.name}</b><br/>
+                  <span style={{fontSize:12}}>{p.name} - {p.price} Pi - {p.cat}</span><br/>
+                  <span style={{fontSize:11,color:"#666"}}>{p.desc.slice(0,55)}... Tap to see 👁️</span>
+                </div>
+                <div style={{display:"flex",gap:4,marginTop:8}}>
+                  <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                    <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
+                  </select>
+                  <select value={selColor[p.name]||"Black"} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                    <option value="Black">Black</option><option value="Brown">Brown</option>
+                  </select>
+                </div>
+                <button onClick={()=>openDetail(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",width:"100%"}}>👁️ View Product</button>
+                <button onClick={()=>addToCart(p,1)} style={{marginTop:6,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
               </div>
-              <button onClick={()=>addToCart(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {view==="detail" && selected && (
+        <div style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
+          <button onClick={()=>setView("shop")} style={{padding:8,borderRadius:8,border:"1px solid #ddd",background:"#eee"}}>← Back to Shop</button>
+          <div style={{textAlign:"center",margin:"16px 0"}}>
+            <div style={{fontSize:120,lineHeight:1}}>{selected.emoji}</div>
+            <div style={{fontSize:11,color:"#888"}}>📸 Real photo coming soon - send your product photos to replace this icon</div>
+            <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
+              <span style={{background: (selColor[selected.name]||"Black")==="Black"?"#000":"#fff",color: (selColor[selected.name]||"Black")==="Black"?"#fff":"#000",border:"1px solid #000",padding:"6px 12px",borderRadius:20,fontSize:12}}>Colour: {selColor[selected.name]||"Black"}</span>
+              <span style={{background:"#eee",padding:"6px 12px",borderRadius:20,fontSize:12}}>Size: {selSize[selected.name]||"M"}</span>
             </div>
-          ))}
+          </div>
+          <h2 style={{margin:0}}>{selected.name}</h2>
+          <p style={{fontSize:20,fontWeight:"bold",color:"orange",margin:"6px 0"}}>{selected.price} Pi</p>
+          <p style={{fontSize:13}}><b>What you are paying for:</b><br/>{selected.desc}</p>
+          <p style={{fontSize:13,background:"#f5f5f5",padding:10,borderRadius:10}}>{selected.detail}<br/><br/>✅ Made in Nigeria<br/>✅ SOSA branded pack<br/>✅ Pickup at No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS or Delivery<br/>✅ Pay with Pi or Pay at Pickup (Barcode)</p>
+          <p style={{fontSize:12}}>Choose Size & Colour:</p>
+          <div style={{display:"flex",gap:6}}>
+            <select value={selSize[selected.name]||"M"} onChange={(e)=>setSelSize({...selSize,[selected.name]:e.target.value})} style={{flex:1,padding:10,borderRadius:10,border:"1px solid #ddd"}}>
+              <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
+            </select>
+            <select value={selColor[selected.name]||"Black"} onChange={(e)=>setSelColor({...selColor,[selected.name]:e.target.value})} style={{flex:1,padding:10,borderRadius:10,border:"1px solid #ddd"}}>
+              <option value="Black">Black</option><option value="Brown">Brown</option>
+            </select>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:12,alignItems:"center"}}>
+            <button onClick={()=>setDetailQty(Math.max(1,detailQty-1))} style={{padding:"8px 16px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",fontSize:18}}>-</button>
+            <b>Qty: {detailQty}</b>
+            <button onClick={()=>setDetailQty(detailQty+1)} style={{padding:"8px 16px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",fontSize:18}}>+</button>
+            <b style={{marginLeft:"auto"}}>Total: {(selected.price*detailQty).toFixed(4)} Pi</b>
+          </div>
+          <button onClick={()=>{addToCart(selected,detailQty); setView("cart");}} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginTop:12}}>Add to Cart - {(selected.price*detailQty).toFixed(4)} Pi</button>
+          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#eee",border:0,marginTop:8}}>← Continue Shopping</button>
         </div>
       )}
 
@@ -298,7 +351,6 @@ export default function Home(){
                 <button onClick={()=>changeQty(c.id,-1)} style={{padding:"6px 14px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",fontSize:16}}>-</button>
                 <b>Qty: {c.qty||1}</b>
                 <button onClick={()=>changeQty(c.id,1)} style={{padding:"6px 14px",borderRadius:20,background:"orange",color:"#000",border:0,fontWeight:"bold",fontSize:16}}>+</button>
-                <span style={{fontSize:11,color:"#666"}}>Tap + to add more, - to reduce</span>
               </div>
             </div>
           ))}
