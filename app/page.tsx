@@ -29,9 +29,8 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-// FIX: Products now have photo placeholder + description, so customer SEES what they pay for
 const PRODUCTS = [
-  { name: "Classic Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria. Available in Black & Brown.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
+  { name: "Classic Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
   { name: "Royal Heel", price: 0.04, cat: "Heel", emoji: "👠", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size." },
   { name: "Lagos Heel", price: 0.03, cat: "Heel", emoji: "👠", desc: "Light Lagos everyday heel. Easy to walk in, strong & durable.", detail: "Heel height: Low-Medium. Best for daily use." },
   { name: "Executive Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Sharp executive heel for office & meetings. Clean, classy finish.", detail: "Heel height: Medium. Office-ready, all-day comfort." },
@@ -218,11 +217,19 @@ export default function Home(){
     setView("detail");
   };
 
+  // FIX: Colour preview - background changes with colour picked
+  const colorBg = (name:string)=>{
+    const c = selColor[name] || "Black";
+    return c==="Brown" ? "#8B4513" : "#111";
+  };
+
   return (
     <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
       <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1}}>SOPHISTICATED<br/>SAMPLES</h1>
       <p>SOSA-outfits. Made in Nigeria</p>
       <p style={{color:"orange",fontSize:13}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
+
+      {/* FIX 1: Admin REMOVED from top bar - no viewer sees Admin anymore */}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
         {!user ? (
           <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Login with Pi</button>
@@ -232,11 +239,11 @@ export default function Home(){
         <button onClick={()=>{reloadOrders(); setView("cart");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cartCount})</button>
         <button onClick={()=>{reloadOrders(); setView("orders");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
         <button onClick={()=>setView("leader")} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold"}}>🏆 Leadership Board</button>
-        <a href="/admin" style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",textDecoration:"none"}}>Admin</a>
       </div>
 
       {view==="leader" && (
         <div style={{background:"#111",padding:12,borderRadius:12}}>
+          <button onClick={()=>setView("shop")} style={{padding:"8px 12px",borderRadius:8,background:"#fff",color:"#000",fontWeight:"bold",marginBottom:8}}>← Back to Shop</button>
           <h2>🏆 SOSA Leadership Board</h2>
           <p style={{fontSize:12,color:"#aaa"}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
           <p>Your Points: <b style={{color:"orange"}}>{points.toFixed(1)} pts</b></p>
@@ -258,10 +265,10 @@ export default function Home(){
             {PRODUCTS.map((p:any,i:number)=>(
               <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
                 <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
-                  <div style={{fontSize:52,lineHeight:1}}>{p.emoji}</div>
+                  <div style={{fontSize:48,lineHeight:1,background:colorBg(p.name),borderRadius:10,padding:10}}>{p.emoji}</div>
                   <b>{p.name}</b><br/>
-                  <span style={{fontSize:12}}>{p.name} - {p.price} Pi - {p.cat}</span><br/>
-                  <span style={{fontSize:11,color:"#666"}}>{p.desc.slice(0,55)}... Tap to see 👁️</span>
+                  <span style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi</span><br/>
+                  <span style={{fontSize:11,color:"#666"}}>{p.cat} • Tap to see 👁️</span>
                 </div>
                 <div style={{display:"flex",gap:4,marginTop:8}}>
                   <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
@@ -276,17 +283,22 @@ export default function Home(){
               </div>
             ))}
           </div>
+          {/* FIX: Admin hidden in tiny footer - only you know it. Viewers won't notice. */}
+          <div style={{textAlign:"center",marginTop:24,paddingBottom:20}}>
+            <p style={{fontSize:11,color:"#666"}}>SOSA © 2026 • Made in Nigeria • Pickup: No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS</p>
+            <a href="/admin" style={{fontSize:10,color:"#333",textDecoration:"none"}}>• Owner •</a>
+          </div>
         </div>
       )}
 
       {view==="detail" && selected && (
         <div style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
-          <button onClick={()=>setView("shop")} style={{padding:8,borderRadius:8,border:"1px solid #ddd",background:"#eee"}}>← Back to Shop</button>
+          <button onClick={()=>setView("shop")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #ddd",background:"#eee",fontWeight:"bold"}}>← Back to Shop</button>
           <div style={{textAlign:"center",margin:"16px 0"}}>
-            <div style={{fontSize:120,lineHeight:1}}>{selected.emoji}</div>
-            <div style={{fontSize:11,color:"#888"}}>📸 Real photo coming soon - send your product photos to replace this icon</div>
+            <div style={{fontSize:110,lineHeight:1,background:colorBg(selected.name),borderRadius:16,padding:16}}>{selected.emoji}</div>
+            <div style={{fontSize:11,color:"#888",marginTop:6}}>📸 Real photo coming soon - send your product photos to replace this icon</div>
             <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
-              <span style={{background: (selColor[selected.name]||"Black")==="Black"?"#000":"#fff",color: (selColor[selected.name]||"Black")==="Black"?"#fff":"#000",border:"1px solid #000",padding:"6px 12px",borderRadius:20,fontSize:12}}>Colour: {selColor[selected.name]||"Black"}</span>
+              <span style={{background: (selColor[selected.name]||"Black")==="Black"?"#000":"#8B4513",color:"#fff",padding:"6px 12px",borderRadius:20,fontSize:12}}>Colour: {selColor[selected.name]||"Black"}</span>
               <span style={{background:"#eee",padding:"6px 12px",borderRadius:20,fontSize:12}}>Size: {selSize[selected.name]||"M"}</span>
             </div>
           </div>
@@ -316,8 +328,8 @@ export default function Home(){
 
       {view==="orders" && (
         <div>
+          <button onClick={()=>setView("shop")} style={{padding:"8px 12px",borderRadius:8,background:"#fff",color:"#000",fontWeight:"bold",marginBottom:8}}>← Back to Shop</button>
           <h2>My Orders</h2>
-          <button onClick={()=>setView("shop")} style={{padding:8,borderRadius:8}}>← Back</button>
           {orders.length===0 && <p>No orders yet.</p>}
           {orders.map((o:any,i:number)=>{
             const f = getFlags(o);
@@ -339,7 +351,9 @@ export default function Home(){
 
       {view==="cart" && (
         <div style={{background:"#111",padding:12,borderRadius:12}}>
-          <h2>Cart ({cartCount})</h2>
+          {/* FIX 2: < Back to Shop at TOP of Cart - no more scrolling to bottom to escape */}
+          <button onClick={()=>setView("shop")} style={{padding:"8px 14px",borderRadius:8,background:"#fff",color:"#000",fontWeight:"bold",marginBottom:10}}>← Back to Shop</button>
+          <h2 style={{marginTop:0}}>Cart ({cartCount})</h2>
           {cart.length===0 && <p>Cart is empty. Go add a product.</p>}
           {cart.map((c:any,i:number)=>(
             <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8}}>
@@ -370,7 +384,7 @@ export default function Home(){
           <button onClick={payWithPi} disabled={paying} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginBottom:8}}>{paying?"Waiting for Wallet approval... DO NOT tap Pay again":`Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
           <button onClick={payWithBarcode} style={{width:"100%",padding:14,borderRadius:20,background:"#fff",color:"#000",border:0,fontWeight:"bold"}}>Pay with Barcode at Pickup — Pay when you come to shop. Show barcode.</button>
           <p style={{fontSize:12,textAlign:"center"}}>Barcode = Reserve now, pay at pickup. No Pi taken now.</p>
-          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>Close Cart</button>
+          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,marginTop:8}}>← Back to Shop</button>
         </div>
       )}
     </div>
