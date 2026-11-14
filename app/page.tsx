@@ -29,22 +29,55 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
+// FIX: Real SVG shoe - fill colour REALLY changes Black / Brown, not just background
+function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boolean }){
+  const fill = color==="Brown" ? "#8B4513" : "#111111";
+  const sole = color==="Brown" ? "#5C2E0E" : "#000000";
+  const size = big ? 140 : 72;
+  if(cat==="Flat"){
+    return (
+      <svg width={size} height={size*0.6} viewBox="0 0 120 70">
+        <path d="M10 50 Q20 20 45 18 L105 18 Q115 18 110 35 Q105 50 85 52 L20 55 Q8 55 10 50 Z" fill={fill} />
+        <rect x="8" y="52" width="105" height="8" rx="4" fill={sole} />
+        <circle cx="28" cy="30" r="6" fill="#fff" opacity="0.25" />
+      </svg>
+    );
+  }
+  if(cat==="Slide"){
+    return (
+      <svg width={size} height={size*0.6} viewBox="0 0 120 70">
+        <path d="M10 55 Q15 25 55 22 L110 30 Q115 38 100 45 L25 58 Q8 60 10 55 Z" fill={fill} />
+        <path d="M35 25 Q55 5 85 18 Q70 28 50 32 Q35 33 35 25 Z" fill={sole} />
+        <rect x="8" y="55" width="108" height="7" rx="3" fill={sole} />
+      </svg>
+    );
+  }
+  // Heel - default
+  return (
+    <svg width={size} height={size*0.9} viewBox="0 0 120 110">
+      <path d="M15 75 Q20 35 45 30 L95 22 Q110 20 105 35 Q100 50 80 55 L60 62 L55 95 L42 95 L45 65 Q25 78 15 75 Z" fill={fill} />
+      <rect x="42" y="95" width="14" height="6" rx="2" fill={sole} />
+      <path d="M25 60 Q35 40 50 35" stroke="#fff" strokeWidth="3" fill="none" opacity="0.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const PRODUCTS = [
-  { name: "Classic Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
-  { name: "Royal Heel", price: 0.04, cat: "Heel", emoji: "👠", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size." },
-  { name: "Lagos Heel", price: 0.03, cat: "Heel", emoji: "👠", desc: "Light Lagos everyday heel. Easy to walk in, strong & durable.", detail: "Heel height: Low-Medium. Best for daily use." },
-  { name: "Executive Heel", price: 0.05, cat: "Heel", emoji: "👠", desc: "Sharp executive heel for office & meetings. Clean, classy finish.", detail: "Heel height: Medium. Office-ready, all-day comfort." },
-  { name: "Heritage Heel", price: 0.04, cat: "Heel", emoji: "👠", desc: "Heritage design with Nigerian style. Strong, beautiful, timeless.", detail: "Heritage collection. Durable sole, premium finish." },
-  { name: "Classic Flat", price: 0.05, cat: "Flat", emoji: "🥿", desc: "Classic flat for everyday comfort. Church, office, market - all day.", detail: "Flat sole. Soft inner. True to size." },
-  { name: "Royal Flat", price: 0.04, cat: "Flat", emoji: "🥿", desc: "Royal flat with soft cushion. Elegant but comfortable.", detail: "Flat sole. Cushioned insole." },
-  { name: "Lagos Flat", price: 0.03, cat: "Flat", emoji: "🥿", desc: "Light Lagos flat. Walk anywhere in Lagos with ease.", detail: "Lightweight, everyday flat." },
-  { name: "Executive Flat", price: 0.05, cat: "Flat", emoji: "🥿", desc: "Executive flat for work. Neat, professional, comfortable.", detail: "Office flat. All-day comfort." },
-  { name: "Heritage Flat", price: 0.04, cat: "Flat", emoji: "🥿", desc: "Heritage flat - Nigerian craft, modern comfort.", detail: "Heritage collection. Durable." },
-  { name: "Classic Palm Slide", price: 0.04, cat: "Slide", emoji: "🩴", desc: "Classic palm slide. Easy to wear, easy to wash, very comfortable.", detail: "Slide-on. No stress. Everyday wear." },
-  { name: "Royal Palm Slide", price: 0.04, cat: "Slide", emoji: "🩴", desc: "Royal palm slide - soft, classy, premium feel.", detail: "Soft sole, premium finish." },
-  { name: "Lagos Palm Slide", price: 0.03, cat: "Slide", emoji: "🩴", desc: "Lagos palm slide for home & street. Light & strong.", detail: "Everyday slide." },
-  { name: "Executive Palm Slide", price: 0.05, cat: "Slide", emoji: "🩴", desc: "Executive palm slide - clean look for smart casual.", detail: "Smart casual slide." },
-  { name: "Heritage Palm Slide", price: 0.04, cat: "Slide", emoji: "🩴", desc: "Heritage palm slide - our signature Nigerian slide.", detail: "Heritage collection. Signature design." },
+  { name: "Classic Heel", price: 0.05, cat: "Heel", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
+  { name: "Royal Heel", price: 0.04, cat: "Heel", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size." },
+  { name: "Lagos Heel", price: 0.03, cat: "Heel", desc: "Light Lagos everyday heel. Easy to walk in, strong & durable.", detail: "Heel height: Low-Medium. Best for daily use." },
+  { name: "Executive Heel", price: 0.05, cat: "Heel", desc: "Sharp executive heel for office & meetings. Clean, classy finish.", detail: "Heel height: Medium. Office-ready, all-day comfort." },
+  { name: "Heritage Heel", price: 0.04, cat: "Heel", desc: "Heritage design with Nigerian style. Strong, beautiful, timeless.", detail: "Heritage collection. Durable sole, premium finish." },
+  { name: "Classic Flat", price: 0.05, cat: "Flat", desc: "Classic flat for everyday comfort. Church, office, market - all day.", detail: "Flat sole. Soft inner. True to size." },
+  { name: "Royal Flat", price: 0.04, cat: "Flat", desc: "Royal flat with soft cushion. Elegant but comfortable.", detail: "Flat sole. Cushioned insole." },
+  { name: "Lagos Flat", price: 0.03, cat: "Flat", desc: "Light Lagos flat. Walk anywhere in Lagos with ease.", detail: "Lightweight, everyday flat." },
+  { name: "Executive Flat", price: 0.05, cat: "Flat", desc: "Executive flat for work. Neat, professional, comfortable.", detail: "Office flat. All-day comfort." },
+  { name: "Heritage Flat", price: 0.04, cat: "Flat", desc: "Heritage flat - Nigerian craft, modern comfort.", detail: "Heritage collection. Durable." },
+  { name: "Classic Palm Slide", price: 0.04, cat: "Slide", desc: "Classic palm slide. Easy to wear, easy to wash, very comfortable.", detail: "Slide-on. No stress. Everyday wear." },
+  { name: "Royal Palm Slide", price: 0.04, cat: "Slide", desc: "Royal palm slide - soft, classy, premium feel.", detail: "Soft sole, premium finish." },
+  { name: "Lagos Palm Slide", price: 0.03, cat: "Slide", desc: "Lagos palm slide for home & street. Light & strong.", detail: "Everyday slide." },
+  { name: "Executive Palm Slide", price: 0.05, cat: "Slide", desc: "Executive palm slide - clean look for smart casual.", detail: "Smart casual slide." },
+  { name: "Heritage Palm Slide", price: 0.04, cat: "Slide", desc: "Heritage palm slide - our signature Nigerian slide.", detail: "Heritage collection. Signature design." },
 ];
 
 export default function Home(){
@@ -217,19 +250,19 @@ export default function Home(){
     setView("detail");
   };
 
-  // FIX: Colour preview - background changes with colour picked
-  const colorBg = (name:string)=>{
-    const c = selColor[name] || "Black";
-    return c==="Brown" ? "#8B4513" : "#111";
-  };
-
   return (
     <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
+      {/* FIX: STICKY Back - always at VERY TOP when not in shop, never scrolls away */}
+      {view!=="shop" && (
+        <div style={{position:"sticky",top:0,zIndex:50,background:"#000",padding:"8px 0",marginBottom:8}}>
+          <button onClick={()=>setView("shop")} style={{padding:"10px 16px",borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
+        </div>
+      )}
+
       <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1}}>SOPHISTICATED<br/>SAMPLES</h1>
       <p>SOSA-outfits. Made in Nigeria</p>
       <p style={{color:"orange",fontSize:13}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
 
-      {/* FIX 1: Admin REMOVED from top bar - no viewer sees Admin anymore */}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
         {!user ? (
           <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Login with Pi</button>
@@ -243,7 +276,6 @@ export default function Home(){
 
       {view==="leader" && (
         <div style={{background:"#111",padding:12,borderRadius:12}}>
-          <button onClick={()=>setView("shop")} style={{padding:"8px 12px",borderRadius:8,background:"#fff",color:"#000",fontWeight:"bold",marginBottom:8}}>← Back to Shop</button>
           <h2>🏆 SOSA Leadership Board</h2>
           <p style={{fontSize:12,color:"#aaa"}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
           <p>Your Points: <b style={{color:"orange"}}>{points.toFixed(1)} pts</b></p>
@@ -254,36 +286,39 @@ export default function Home(){
               <b style={{fontSize:18}}>⭐ {Number(l.points).toFixed(1)}</b>
             </div>
           ))}
-          <button onClick={()=>setView("shop")} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>← Back to Shop</button>
         </div>
       )}
 
       {view==="shop" && (
         <div>
-          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy. Don't buy blind.</p>
+          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy. Shoe colour REALLY changes now.</p>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            {PRODUCTS.map((p:any,i:number)=>(
-              <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
-                <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
-                  <div style={{fontSize:48,lineHeight:1,background:colorBg(p.name),borderRadius:10,padding:10}}>{p.emoji}</div>
-                  <b>{p.name}</b><br/>
-                  <span style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi</span><br/>
-                  <span style={{fontSize:11,color:"#666"}}>{p.cat} • Tap to see 👁️</span>
+            {PRODUCTS.map((p:any,i:number)=>{
+              const col = selColor[p.name] || "Black";
+              return (
+                <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
+                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
+                    <div style={{background:"#f5f5f5",borderRadius:10,padding:10,display:"flex",justifyContent:"center"}}>
+                      <ShoeIcon cat={p.cat} color={col} />
+                    </div>
+                    <b>{p.name}</b><br/>
+                    <span style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi</span><br/>
+                    <span style={{fontSize:11,color:"#666"}}>{p.cat} • Colour: {col} • Tap to see 👁️</span>
+                  </div>
+                  <div style={{display:"flex",gap:4,marginTop:8}}>
+                    <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                      <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
+                    </select>
+                    <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
+                      <option value="Black">Black</option><option value="Brown">Brown</option>
+                    </select>
+                  </div>
+                  <button onClick={()=>openDetail(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",width:"100%"}}>👁️ View Product</button>
+                  <button onClick={()=>addToCart(p,1)} style={{marginTop:6,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
                 </div>
-                <div style={{display:"flex",gap:4,marginTop:8}}>
-                  <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
-                    <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
-                  </select>
-                  <select value={selColor[p.name]||"Black"} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd"}}>
-                    <option value="Black">Black</option><option value="Brown">Brown</option>
-                  </select>
-                </div>
-                <button onClick={()=>openDetail(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",width:"100%"}}>👁️ View Product</button>
-                <button onClick={()=>addToCart(p,1)} style={{marginTop:6,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {/* FIX: Admin hidden in tiny footer - only you know it. Viewers won't notice. */}
           <div style={{textAlign:"center",marginTop:24,paddingBottom:20}}>
             <p style={{fontSize:11,color:"#666"}}>SOSA © 2026 • Made in Nigeria • Pickup: No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS</p>
             <a href="/admin" style={{fontSize:10,color:"#333",textDecoration:"none"}}>• Owner •</a>
@@ -293,10 +328,11 @@ export default function Home(){
 
       {view==="detail" && selected && (
         <div style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
-          <button onClick={()=>setView("shop")} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #ddd",background:"#eee",fontWeight:"bold"}}>← Back to Shop</button>
-          <div style={{textAlign:"center",margin:"16px 0"}}>
-            <div style={{fontSize:110,lineHeight:1,background:colorBg(selected.name),borderRadius:16,padding:16}}>{selected.emoji}</div>
-            <div style={{fontSize:11,color:"#888",marginTop:6}}>📸 Real photo coming soon - send your product photos to replace this icon</div>
+          <div style={{textAlign:"center",margin:"8px 0"}}>
+            <div style={{background:"#f5f5f5",borderRadius:16,padding:20,display:"flex",justifyContent:"center"}}>
+              <ShoeIcon cat={selected.cat} color={selColor[selected.name]||"Black"} big={true} />
+            </div>
+            <div style={{fontSize:11,color:"#888",marginTop:8}}>📸 Real photo coming soon - send your product photos to replace this drawing</div>
             <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
               <span style={{background: (selColor[selected.name]||"Black")==="Black"?"#000":"#8B4513",color:"#fff",padding:"6px 12px",borderRadius:20,fontSize:12}}>Colour: {selColor[selected.name]||"Black"}</span>
               <span style={{background:"#eee",padding:"6px 12px",borderRadius:20,fontSize:12}}>Size: {selSize[selected.name]||"M"}</span>
@@ -306,14 +342,16 @@ export default function Home(){
           <p style={{fontSize:20,fontWeight:"bold",color:"orange",margin:"6px 0"}}>{selected.price} Pi</p>
           <p style={{fontSize:13}}><b>What you are paying for:</b><br/>{selected.desc}</p>
           <p style={{fontSize:13,background:"#f5f5f5",padding:10,borderRadius:10}}>{selected.detail}<br/><br/>✅ Made in Nigeria<br/>✅ SOSA branded pack<br/>✅ Pickup at No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS or Delivery<br/>✅ Pay with Pi or Pay at Pickup (Barcode)</p>
-          <p style={{fontSize:12}}>Choose Size & Colour:</p>
+          <p style={{fontSize:12,fontWeight:"bold"}}>Pick Colour - shoe changes instantly:</p>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <button onClick={()=>setSelColor({...selColor,[selected.name]:"Black"})} style={{flex:1,padding:12,borderRadius:12,background:(selColor[selected.name]||"Black")==="Black"?"#000":"#fff",color:(selColor[selected.name]||"Black")==="Black"?"#fff":"#000",border:"2px solid #000",fontWeight:"bold"}}>⬛ Black</button>
+            <button onClick={()=>setSelColor({...selColor,[selected.name]:"Brown"})} style={{flex:1,padding:12,borderRadius:12,background:(selColor[selected.name]||"Black")==="Brown"?"#8B4513":"#fff",color:(selColor[selected.name]||"Black")==="Brown"?"#fff":"#000",border:"2px solid #8B4513",fontWeight:"bold"}}>🟫 Brown</button>
+          </div>
+          <p style={{fontSize:12}}>Choose Size:</p>
           <div style={{display:"flex",gap:6}}>
-            <select value={selSize[selected.name]||"M"} onChange={(e)=>setSelSize({...selSize,[selected.name]:e.target.value})} style={{flex:1,padding:10,borderRadius:10,border:"1px solid #ddd"}}>
-              <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
-            </select>
-            <select value={selColor[selected.name]||"Black"} onChange={(e)=>setSelColor({...selColor,[selected.name]:e.target.value})} style={{flex:1,padding:10,borderRadius:10,border:"1px solid #ddd"}}>
-              <option value="Black">Black</option><option value="Brown">Brown</option>
-            </select>
+            {["S","M","L","XL","XXL"].map((s:string)=>(
+              <button key={s} onClick={()=>setSelSize({...selSize,[selected.name]:s})} style={{flex:1,padding:10,borderRadius:10,background:(selSize[selected.name]||"M")===s?"orange":"#eee",border:0,fontWeight:"bold"}}>{s}</button>
+            ))}
           </div>
           <div style={{display:"flex",gap:8,marginTop:12,alignItems:"center"}}>
             <button onClick={()=>setDetailQty(Math.max(1,detailQty-1))} style={{padding:"8px 16px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",fontSize:18}}>-</button>
@@ -328,7 +366,6 @@ export default function Home(){
 
       {view==="orders" && (
         <div>
-          <button onClick={()=>setView("shop")} style={{padding:"8px 12px",borderRadius:8,background:"#fff",color:"#000",fontWeight:"bold",marginBottom:8}}>← Back to Shop</button>
           <h2>My Orders</h2>
           {orders.length===0 && <p>No orders yet.</p>}
           {orders.map((o:any,i:number)=>{
@@ -351,14 +388,15 @@ export default function Home(){
 
       {view==="cart" && (
         <div style={{background:"#111",padding:12,borderRadius:12}}>
-          {/* FIX 2: < Back to Shop at TOP of Cart - no more scrolling to bottom to escape */}
-          <button onClick={()=>setView("shop")} style={{padding:"8px 14px",borderRadius:8,background:"#fff",color:"#000",fontWeight:"bold",marginBottom:10}}>← Back to Shop</button>
           <h2 style={{marginTop:0}}>Cart ({cartCount})</h2>
           {cart.length===0 && <p>Cart is empty. Go add a product.</p>}
           {cart.map((c:any,i:number)=>(
             <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span><b>{c.name}</b> - {c.color} / {c.size} - {c.price} Pi x {c.qty||1} = {(Number(c.price)*(c.qty||1)).toFixed(4)} Pi</span>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <ShoeIcon cat={c.cat || "Heel"} color={c.color} />
+                <div style={{flex:1}}>
+                  <b>{c.name}</b> - {c.color} / {c.size} - {c.price} Pi x {c.qty||1} = {(Number(c.price)*(c.qty||1)).toFixed(4)} Pi
+                </div>
                 <button onClick={()=>saveCart(cart.filter((_:any,idx:number)=>idx!==i))} style={{background:"red",color:"#fff",border:0,borderRadius:50,padding:"2px 8px"}}>X</button>
               </div>
               <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
