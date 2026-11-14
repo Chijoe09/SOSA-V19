@@ -10,10 +10,13 @@ function fmtPhone(p: any){
   return raw;
 }
 
+// ===== ALL PRODUCTS - 15 TOTAL =====
 const PRODUCTS = [
   { name: "Classic Heel", price: 0.05, cat: "Footwear" },
   { name: "Royal Heel", price: 0.04, cat: "Footwear" },
   { name: "Lagos Heel", price: 0.03, cat: "Footwear" },
+  { name: "Executive Heel", price: 0.05, cat: "Footwear" },
+  { name: "Heritage Heel", price: 0.04, cat: "Footwear" },
   { name: "Classic Flat", price: 0.05, cat: "Footwear" },
   { name: "Royal Flat", price: 0.04, cat: "Footwear" },
   { name: "Lagos Flat", price: 0.03, cat: "Footwear" },
@@ -21,6 +24,9 @@ const PRODUCTS = [
   { name: "Heritage Flat", price: 0.04, cat: "Footwear" },
   { name: "Classic Palm Slide", price: 0.04, cat: "Footwear" },
   { name: "Royal Palm Slide", price: 0.04, cat: "Footwear" },
+  { name: "Lagos Palm Slide", price: 0.03, cat: "Footwear" },
+  { name: "Executive Palm Slide", price: 0.05, cat: "Footwear" },
+  { name: "Heritage Palm Slide", price: 0.04, cat: "Footwear" },
 ];
 
 export default function Home(){
@@ -28,6 +34,7 @@ export default function Home(){
   const [cart, setCart] = useState<any[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
+  const [showLeader, setShowLeader] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [points, setPoints] = useState(0);
   const [custName, setCustName] = useState("");
@@ -51,6 +58,16 @@ export default function Home(){
   const total = cart.reduce((a:any,c:any)=>a+Number(c.price||0),0);
   const deliveryFee = method==="delivery" ? 0.0001 : 0;
   const grandTotal = total + deliveryFee;
+
+  const leaderMap: any = {};
+  orders.forEach((o:any)=>{
+    const key = o.buyer || o.name || "Guest";
+    if(!leaderMap[key]) leaderMap[key] = { name: o.name || key, buyer: key, points: 0, orders: 0, total: 0 };
+    leaderMap[key].points += Number(o.points||0);
+    leaderMap[key].orders += 1;
+    leaderMap[key].total += Number(o.total||0);
+  });
+  const leaders = Object.values(leaderMap).sort((a:any,b:any)=>b.points-a.points).slice(0,10);
 
   const validate=()=>{
     if(!custName.trim()){ alert("Enter Full Name"); return false; }
@@ -89,11 +106,29 @@ export default function Home(){
       <p style={{color:"orange",fontSize:13}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
         {!user ? <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Login with Pi</button> : <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Logout</button>}
-        <button onClick={()=>{setShowCart(true); setShowOrders(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cart.length})</button>
-        <button onClick={()=>{setShowOrders(true); setShowCart(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
+        <button onClick={()=>{setShowCart(true); setShowOrders(false); setShowLeader(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cart.length})</button>
+        <button onClick={()=>{setShowOrders(true); setShowCart(false); setShowLeader(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
+        <button onClick={()=>{setShowLeader(true); setShowCart(false); setShowOrders(false);}} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold"}}>🏆 Leadership Board</button>
         <a href="/admin" style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",textDecoration:"none"}}>Admin</a>
       </div>
-      {!showCart && !showOrders && (
+
+      {showLeader && (
+        <div style={{background:"#111",padding:12,borderRadius:12}}>
+          <h2>🏆 SOSA Leadership Board</h2>
+          <p style={{fontSize:12,color:"#aaa"}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
+          <p>Your Points: <b style={{color:"orange"}}>{points.toFixed(1)} pts</b></p>
+          {leaders.length===0 && <p>No buyers yet. Be the first!</p>}
+          {leaders.map((l:any,i:number)=>(
+            <div key={i} style={{background: i===0?"orange":"#fff", color:"#000", padding:12, borderRadius:12, marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <span><b>{i===0?"👑 #1 ":i===1?"🥈 #2 ":i===2?"🥉 #3 ":`#${i+1} `}{l.name}</b><br/><span style={{fontSize:11}}>@{l.buyer} • {l.orders} order(s) • {Number(l.total).toFixed(4)} Pi</span></span>
+              <b style={{fontSize:18}}>⭐ {Number(l.points).toFixed(1)}</b>
+            </div>
+          ))}
+          <button onClick={()=>setShowLeader(false)} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>← Back to Shop</button>
+        </div>
+      )}
+
+      {!showCart && !showOrders && !showLeader && (
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {PRODUCTS.map((p:any,i:number)=>(
             <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
@@ -103,6 +138,7 @@ export default function Home(){
           ))}
         </div>
       )}
+
       {showOrders && (
         <div><h2>My Orders</h2><button onClick={()=>setShowOrders(false)} style={{padding:8,borderRadius:8}}>← Back</button>
           {orders.length===0 && <p>No orders yet.</p>}
@@ -119,6 +155,7 @@ export default function Home(){
           ))}
         </div>
       )}
+
       {showCart && (
         <div style={{background:"#111",padding:12,borderRadius:12}}><h2>Cart</h2>
           {cart.map((c:any,i:number)=>(
