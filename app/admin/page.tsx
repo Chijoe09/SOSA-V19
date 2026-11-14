@@ -9,179 +9,71 @@ function fmtPhone(p: any){
   if(digits.length===10 && digits.startsWith('8')) return '0' + digits.slice(0,3) + ' ' + digits.slice(3,6) + ' ' + digits.slice(6);
   return raw;
 }
+function phoneForLink(p: any){
+  let digits = String(p || '').replace(/\D/g,'');
+  if(digits.startsWith('234') && digits.length===13) return '+' + digits;
+  if(digits.startsWith('0') && digits.length===11) return '+234' + digits.slice(1);
+  if(digits.length===10) return '+234' + digits;
+  return String(p || '');
+}
 
-// ===== ALL PRODUCTS - 15 TOTAL =====
-const PRODUCTS = [
-  { name: "Classic Heel", price: 0.05, cat: "Footwear" },
-  { name: "Royal Heel", price: 0.04, cat: "Footwear" },
-  { name: "Lagos Heel", price: 0.03, cat: "Footwear" },
-  { name: "Executive Heel", price: 0.05, cat: "Footwear" },
-  { name: "Heritage Heel", price: 0.04, cat: "Footwear" },
-  { name: "Classic Flat", price: 0.05, cat: "Footwear" },
-  { name: "Royal Flat", price: 0.04, cat: "Footwear" },
-  { name: "Lagos Flat", price: 0.03, cat: "Footwear" },
-  { name: "Executive Flat", price: 0.05, cat: "Footwear" },
-  { name: "Heritage Flat", price: 0.04, cat: "Footwear" },
-  { name: "Classic Palm Slide", price: 0.04, cat: "Footwear" },
-  { name: "Royal Palm Slide", price: 0.04, cat: "Footwear" },
-  { name: "Lagos Palm Slide", price: 0.03, cat: "Footwear" },
-  { name: "Executive Palm Slide", price: 0.05, cat: "Footwear" },
-  { name: "Heritage Palm Slide", price: 0.04, cat: "Footwear" },
-];
+export default function Admin(){
+  const [pass,setPass]=useState(""); const [ok,setOk]=useState(false); const [orders,setOrders]=useState<any[]>([]);
+  const [name,setName]=useState(""); const [price,setPrice]=useState(""); const [desc,setDesc]=useState("");
 
-export default function Home(){
-  const [user, setUser] = useState<any>(null);
-  const [cart, setCart] = useState<any[]>([]);
-  const [showCart, setShowCart] = useState(false);
-  const [showOrders, setShowOrders] = useState(false);
-  const [showLeader, setShowLeader] = useState(false);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [points, setPoints] = useState(0);
-  const [custName, setCustName] = useState("");
-  const [custPhone, setCustPhone] = useState("");
-  const [method, setMethod] = useState("pickup");
-  const [address, setAddress] = useState("No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.");
-  const [paying, setPaying] = useState(false);
-
-  useEffect(()=>{
-    try{
-      const o = JSON.parse(localStorage.getItem("sosa_orders")||"[]");
-      setOrders(o); setPoints(o.reduce((a:any,x:any)=>a+Number(x.points||0),0));
-    }catch{}
-    const u = localStorage.getItem("sosa_user");
-    if(u) setUser(JSON.parse(u));
-  },[]);
-
-  const saveOrders=(next:any[])=>{ setOrders(next); localStorage.setItem("sosa_orders", JSON.stringify(next)); setPoints(next.reduce((a:any,x:any)=>a+Number(x.points||0),0)); };
-  const login=()=>{ const u={username:"chijoe09",name:"Jude Chijoe"}; setUser(u); localStorage.setItem("sosa_user", JSON.stringify(u)); };
-  const addToCart=(p:any)=>{ const size=prompt("Choose size: S, M, L, XL, XXL","M")||"M"; const color=prompt("Choose color: Black / Brown","Black")||"Black"; setCart([...cart,{...p,size,color,id:Date.now()+Math.random()}]); };
-  const total = cart.reduce((a:any,c:any)=>a+Number(c.price||0),0);
-  const deliveryFee = method==="delivery" ? 0.0001 : 0;
-  const grandTotal = total + deliveryFee;
-
-  const leaderMap: any = {};
-  orders.forEach((o:any)=>{
-    const key = o.buyer || o.name || "Guest";
-    if(!leaderMap[key]) leaderMap[key] = { name: o.name || key, buyer: key, points: 0, orders: 0, total: 0 };
-    leaderMap[key].points += Number(o.points||0);
-    leaderMap[key].orders += 1;
-    leaderMap[key].total += Number(o.total||0);
-  });
-  const leaders = Object.values(leaderMap).sort((a:any,b:any)=>b.points-a.points).slice(0,10);
-
-  const validate=()=>{
-    if(!custName.trim()){ alert("Enter Full Name"); return false; }
-    const digits = custPhone.replace(/\D/g,'');
-    if(digits.length!==11 && digits.length!==13 && digits.length!==10){ alert("Enter valid phone: 08176675579 or +2348176675579"); return false; }
-    if(method==="delivery" && !address.trim()){ alert("Enter delivery address"); return false; }
-    if(cart.length===0){ alert("Cart is empty"); return false; }
-    return true;
+  // FIX: Delivered = Paid + Sent + Delivered ALL true, so green STAYS
+  const normalize=(o:any)=>{
+    if(o.delivered) return { ...o, paid:true, sent:true, delivered:true, tracking:"Delivered" };
+    if(o.sent) return { ...o, paid: !!o.paid || o.tracking==="Sent" || o.tracking==="Delivered", sent:true, delivered:false, tracking: o.tracking==="Delivered"?"Delivered":"Sent" };
+    if(o.paid!==undefined || o.sent!==undefined || o.delivered!==undefined) return { ...o, paid: !!o.paid, sent: !!o.sent, delivered: !!o.delivered };
+    const t = o.tracking || "Paid";
+    if(t==="Pending - Pay at Pickup") return { ...o, paid:false, sent:false, delivered:false, tracking:t };
+    if(t==="Paid") return { ...o, paid:true, sent:false, delivered:false, tracking:t };
+    if(t==="Sent") return { ...o, paid:true, sent:true, delivered:false, tracking:t };
+    if(t==="Delivered") return { ...o, paid:true, sent:true, delivered:true, tracking:t };
+    return { ...o, paid:true, sent:false, delivered:false, tracking:t };
   };
 
-  const createOrder=(paid:boolean, txid:string)=>{
-    const order={ id:"SOSA-"+Date.now(), date:new Date().toLocaleString(), buyer:user?.username||"chijoe09", name:custName, phone:custPhone, method:method==="pickup"?"pickup":"delivery", address:method==="pickup"?"No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.":address, items:cart.map((c:any)=>`${c.name} - ${c.color}/${c.size} x1`).join(", "), total:Number(grandTotal.toFixed(4)), points:Number(total.toFixed(1)), txid:txid, paid:paid, sent:false, delivered:false, tracking:paid?"Paid":"Pending - Pay at Pickup" };
-    const next=[order,...orders]; saveOrders(next); setCart([]); setShowCart(false);
-    alert(paid?`Payment SUCCESS! Order saved. Tracking: Paid ✅ We will contact you on ${custPhone}`:`Barcode Order saved. Pay at pickup. We will contact you on ${custPhone}`);
+  const load=()=>{ try{ const raw=JSON.parse(localStorage.getItem("sosa_orders")||"[]"); setOrders(raw.map(normalize)); }catch{ setOrders([]); } };
+  useEffect(()=>{ load(); const h=()=>load(); window.addEventListener("storage",h); return ()=>window.removeEventListener("storage",h); },[]);
+  const totalPi = orders.reduce((a:any,o:any)=>a+Number(o.total||0),0);
+
+  // FIX: Mark Delivered also marks Paid + Sent, so it STAYS green everywhere
+  const setFlag=(id:string, field:string)=>{
+    const next=orders.map((o:any)=>{
+      if(o.id!==id) return o;
+      const updated={...o};
+      if(field==="delivered"){ updated.paid=true; updated.sent=true; updated.delivered=true; updated.tracking="Delivered"; }
+      else if(field==="sent"){ updated.sent=true; updated.tracking="Sent"; }
+      else if(field==="paid"){ updated.paid=true; updated.tracking= updated.delivered?"Delivered": updated.sent?"Sent":"Paid"; }
+      return updated;
+    });
+    setOrders(next); localStorage.setItem("sosa_orders",JSON.stringify(next));
   };
 
-  const payWithPi=async()=>{
-    if(!validate()) return; setPaying(true);
-    try{
-      // @ts-ignore
-      const Pi=(window as any).Pi;
-      if(!Pi){ alert("Open in Pi Browser to pay with Pi"); setPaying(false); return; }
-      await Pi.createPayment({ amount:grandTotal, memo:`SOSA Order - ${cart.map((c:any)=>c.name).join(", ")} | ${custName} | ${custPhone} | ${method==="pickup"?"PICKUP":"DELIVERY"}: ${address}`, metadata:{name:custName,phone:custPhone,method,address} },{
-        onReadyForServerApproval:(paymentId:string)=>{},
-        onReadyForServerCompletion:(paymentId:string,txid:string)=>{ createOrder(true,txid); setPaying(false); },
-        onCancel:()=>{ setPaying(false); }, onError:()=>{ setPaying(false); alert("Payment failed"); },
-      });
-    }catch(e){ setPaying(false); alert("Payment error"); }
-  };
-  const payWithBarcode=()=>{ if(!validate()) return; createOrder(false,"BARCODE-"+Date.now()); };
-
-  return (
-    <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
-      <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1}}>SOPHISTICATED<br/>SAMPLES</h1>
-      <p>SOSA-outfits. Made in Nigeria</p>
-      <p style={{color:"orange",fontSize:13}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-        {!user ? <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Login with Pi</button> : <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Logout</button>}
-        <button onClick={()=>{setShowCart(true); setShowOrders(false); setShowLeader(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>Cart ({cart.length})</button>
-        <button onClick={()=>{setShowOrders(true); setShowCart(false); setShowLeader(false);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000"}}>My Orders</button>
-        <button onClick={()=>{setShowLeader(true); setShowCart(false); setShowOrders(false);}} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold"}}>🏆 Leadership Board</button>
-        <a href="/admin" style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",textDecoration:"none"}}>Admin</a>
-      </div>
-
-      {showLeader && (
-        <div style={{background:"#111",padding:12,borderRadius:12}}>
-          <h2>🏆 SOSA Leadership Board</h2>
-          <p style={{fontSize:12,color:"#aaa"}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
-          <p>Your Points: <b style={{color:"orange"}}>{points.toFixed(1)} pts</b></p>
-          {leaders.length===0 && <p>No buyers yet. Be the first!</p>}
-          {leaders.map((l:any,i:number)=>(
-            <div key={i} style={{background: i===0?"orange":"#fff", color:"#000", padding:12, borderRadius:12, marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-              <span><b>{i===0?"👑 #1 ":i===1?"🥈 #2 ":i===2?"🥉 #3 ":`#${i+1} `}{l.name}</b><br/><span style={{fontSize:11}}>@{l.buyer} • {l.orders} order(s) • {Number(l.total).toFixed(4)} Pi</span></span>
-              <b style={{fontSize:18}}>⭐ {Number(l.points).toFixed(1)}</b>
-            </div>
-          ))}
-          <button onClick={()=>setShowLeader(false)} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>← Back to Shop</button>
+  if(!ok) return (<div style={{padding:20,fontFamily:"sans-serif"}}><a href="/" style={{display:"inline-block",padding:"8px 12px",borderRadius:8,background:"#eee",color:"#000",textDecoration:"none",fontWeight:"bold",marginBottom:12}}>← Back To Shop</a><h1>SOSA Admin</h1><input placeholder="Admin Password" value={pass} onChange={(e)=>setPass(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,border:"1px solid orange"}} /><button onClick={()=>{ if(pass==="sosa5463"){ setOk(true); load(); } else alert("Wrong password"); }} style={{width:"100%",padding:12,marginTop:10,borderRadius:10,background:"#000",color:"#fff",fontWeight:"bold"}}>Enter Admin</button></div>);
+  return (<div style={{padding:16,fontFamily:"sans-serif"}}><h1>SOSA Admin - History</h1><a href="/">← Back to Shop</a>
+    <div style={{display:"flex",gap:8,margin:"12px 0"}}><div style={{background:"#000",color:"#fff",padding:12,borderRadius:10,flex:1}}><b>Total Records<br/>{orders.length}</b><br/>Orders</div><div style={{background:"orange",padding:12,borderRadius:10,flex:1}}><b>Total Pi<br/>{totalPi.toFixed(4)}</b><br/>Test-Pi Collected</div><div style={{background:"#eee",padding:12,borderRadius:10,flex:1}}><b>Products<br/>0</b><br/>In Admin List</div></div>
+    <h3>--- ORDER HISTORY ---</h3>
+    {orders.map((o:any,i:number)=>{
+      const isPaid = !!o.paid; const isSent = !!o.sent; const isDelivered = !!o.delivered; const isPending = !isPaid;
+      const statusText = isDelivered ? "Delivered" : isSent ? "Sent" : isPaid ? "Paid" : "Pending - Pay at Pickup";
+      return (<div key={i} style={{border:"1px solid #ddd",padding:12,borderRadius:10,marginBottom:10}}>
+        <b>{o.id}</b> - {o.date}<br/>Buyer: @{o.buyer}<br/>Name: {o.name} | Phone: {fmtPhone(o.phone)} <a href={`tel:${phoneForLink(o.phone)}`}>Call</a> • <a href={`https://wa.me/${phoneForLink(o.phone).replace('+','')}`}>WhatsApp</a><br/>Method: {o.method} | Address: {o.address}<br/>Items: {o.items}<br/><b>Total: {o.total} Pi</b> | ⭐ Points: {o.points}<br/>TX: {o.txid}<br/>
+        Status: <b style={{color: isDelivered?"#16a34a":isPaid?"#16a34a":"orange"}}>{statusText}</b>
+        <div style={{display:"flex",gap:6,marginTop:8}}><span style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:20,fontSize:11,fontWeight:"bold",background: isPaid?"#16a34a":"#333",color:"#fff"}}>{isPaid?"✅ ":"⚪ "}Paid</span><span style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:20,fontSize:11,fontWeight:"bold",background: isSent?"#16a34a":"#333",color:"#fff"}}>{isSent?"✅ ":"⚪ "}Sent</span><span style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:20,fontSize:11,fontWeight:"bold",background: isDelivered?"#16a34a":"#333",color:"#fff"}}>{isDelivered?"✅ ":"⚪ "}Delivered</span></div>
+        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+          {isPending && <button onClick={()=>setFlag(o.id,"paid")} style={{flex:1,padding:10,borderRadius:20,background:"#16a34a",color:"#fff",border:0,fontWeight:"bold"}}>✅ Mark Paid (they paid at shop)</button>}
+          <button onClick={()=>setFlag(o.id,"sent")} disabled={isSent} style={{flex:1,padding:10,borderRadius:20,background: isSent?"#16a34a":"#eab308",color:isSent?"#fff":"#000",border:0,fontWeight:"bold"}}>📦 Mark Sent</button>
+          <button onClick={()=>setFlag(o.id,"delivered")} disabled={isDelivered} style={{flex:1,padding:10,borderRadius:20,background: isDelivered?"#16a34a":"#000",color:"#fff",border:0,fontWeight:"bold"}}>🏠 Mark Delivered</button>
         </div>
-      )}
-
-      {!showCart && !showOrders && !showLeader && (
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {PRODUCTS.map((p:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center"}}>
-              <b>{p.name}</b><br/><span style={{fontSize:12}}>{p.name} - {p.price} Pi - {p.cat}</span><br/>
-              <button onClick={()=>addToCart(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showOrders && (
-        <div><h2>My Orders</h2><button onClick={()=>setShowOrders(false)} style={{padding:8,borderRadius:8}}>← Back</button>
-          {orders.length===0 && <p>No orders yet.</p>}
-          {orders.map((o:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",padding:12,borderRadius:12,marginTop:10}}>
-              <b>{o.id}</b><br/>{o.date}<br/>Items: {o.items}<br/>Total: {o.total} Pi<br/>Phone: {fmtPhone(o.phone)}<br/>
-              Status: <b>{o.delivered?"Delivered":o.sent?"Sent":o.paid?"Paid":"Pending - Pay at Pickup"}</b><br/>
-              <div style={{display:"flex",gap:6,marginTop:8}}>
-                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:o.paid?"#16a34a":"#333",color:"#fff",fontSize:11}}>{o.paid?"✅ ":"⚪ "}Paid</span>
-                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:o.sent?"#16a34a":"#333",color:"#fff",fontSize:11}}>{o.sent?"✅ ":"⚪ "}Sent</span>
-                <span style={{flex:1,textAlign:"center",padding:6,borderRadius:20,background:o.delivered?"#16a34a":"#333",color:"#fff",fontSize:11}}>{o.delivered?"✅ ":"⚪ "}Delivered</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showCart && (
-        <div style={{background:"#111",padding:12,borderRadius:12}}><h2>Cart</h2>
-          {cart.map((c:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8,display:"flex",justifyContent:"space-between"}}>
-              <span>{c.name} - {c.color} / {c.size} - {c.price} Pi x 1</span>
-              <button onClick={()=>setCart(cart.filter((_:any,idx:number)=>idx!==i))} style={{background:"red",color:"#fff",border:0,borderRadius:50,padding:"2px 8px"}}>X</button>
-            </div>
-          ))}
-          <p>Total: {total.toFixed(2)} Pi</p><h3>--- CHECKOUT DETAILS ---</h3>
-          <input placeholder="Full Name *" value={custName} onChange={(e)=>setCustName(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0}} />
-          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone Number / WhatsApp *" value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g, ""))} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0}} />
-          <p style={{fontSize:11,color:"#aaa",marginTop:-4}}>Example: 08176675579 or +2348176675579 — numbers only</p>
-          <div style={{background:"#222",padding:10,borderRadius:10,fontSize:12,marginBottom:8}}>🏠 Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.<br/>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</div>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <button onClick={()=>setMethod("delivery")} style={{flex:1,padding:12,borderRadius:20,background:method==="delivery"?"orange":"#333",color:"#fff",border:0,fontWeight:"bold"}}>🚚 Delivery (+0.0001 Pi)</button>
-            <button onClick={()=>setMethod("pickup")} style={{flex:1,padding:12,borderRadius:20,background:method==="pickup"?"orange":"#333",color:"#fff",border:0,fontWeight:"bold"}}>🏠 Self Pickup (Free)</button>
-          </div>
-          <p>Self Pickup Address:</p>
-          <input value={method==="pickup"?"No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.":address} onChange={(e)=>setAddress(e.target.value)} disabled={method==="pickup"} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8}} />
-          <p>Grand Total (SOSA): {total.toFixed(4)} Pi {method==="delivery"?"+ 0.0001 delivery":"(self pickup free)"}<br/>+ Pi Network Fee: 0.01 Pi (paid to Pi, NOT SOSA)<br/>Wallet will show: {(grandTotal+0.01).toFixed(4)} Pi total</p>
-          <button onClick={payWithPi} disabled={paying} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginBottom:8}}>{paying?"Waiting for Wallet approval... DO NOT tap Pay again":`Pay with Pi - ${grandTotal.toFixed(4)} Pi`}</button>
-          <button onClick={payWithBarcode} style={{width:"100%",padding:14,borderRadius:20,background:"#fff",color:"#000",border:0,fontWeight:"bold"}}>Pay with Barcode at Pickup — Pay when you come to shop. Show barcode.</button>
-          <p style={{fontSize:12,textAlign:"center"}}>Barcode = Reserve now, pay at pickup. No Pi taken now.</p>
-          <button onClick={()=>setShowCart(false)} style={{width:"100%",padding:12,borderRadius:10,background:"#333",color:"#fff",border:0,marginTop:8}}>Close Cart</button>
-        </div>
-      )}
-    </div>
-  );
+      </div>);
+    })}
+    <h3>--- ADD PRODUCT ---</h3>
+    <input placeholder="Product name" value={name} onChange={(e)=>setName(e.target.value)} style={{width:"100%",padding:12,marginBottom:8,borderRadius:10}} />
+    <input placeholder="Price in Pi" value={price} onChange={(e)=>setPrice(e.target.value)} style={{width:"100%",padding:12,marginBottom:8,borderRadius:10}} />
+    <input placeholder="Description" value={desc} onChange={(e)=>setDesc(e.target.value)} style={{width:"100%",padding:12,marginBottom:8,borderRadius:10}} />
+    <button onClick={()=>alert("Product added (demo)")} style={{width:"100%",padding:12,borderRadius:10,background:"#000",color:"#fff"}}>Add Product</button>
+    <button onClick={()=>{ if(confirm("Clear all history?")){ localStorage.removeItem("sosa_orders"); setOrders([]); } }} style={{width:"100%",padding:12,marginTop:8,borderRadius:10,background:"red",color:"#fff"}}>Clear History</button>
+  </div>);
 }
