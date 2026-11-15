@@ -22,7 +22,6 @@ const PRODUCTS = [
   { id: 18, name: "Silver Bag", cat: "SOSA • BAG", price: "0.06 Pi", color: "Silver", desc: "Elegant silver bag for owambe, church & outing. Light, strong, premium finish." },
 ];
 
-// LOGO BACK - BUILT INTO CODE, NO FILE NEEDED - SOSA OUTFITS ATTACHED INSIDE EGG
 function SosaLogo() {
   return (
     <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -45,11 +44,26 @@ function SosaLogo() {
 
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [dark, setDark] = useState(true);
+  // THIS IS THE FIX - which panel is open
+  const [panel, setPanel] = useState<string | null>(null);
+
   const bg = dark ? "#000" : "#f2f2f2";
   const mainText = dark ? "#fff" : "#000";
   const subText2 = dark ? "#aaa" : "#777";
+  const total = cart.reduce((s, p) => s + parseFloat(p.price), 0).toFixed(2);
+
+  const checkout = () => {
+    if (cart.length === 0) return;
+    const newOrder = { id: Date.now(), items: [...cart], total, date: new Date().toLocaleString() };
+    setOrders([newOrder, ...orders]);
+    setCart([]);
+    setPanel("orders");
+  };
+
+  const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
 
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
@@ -58,7 +72,6 @@ export default function Home() {
           <SosaLogo />
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
-            {/* SOSA OUTFITS - BOLDER - MADE IN NIGERIA REMOVED HERE */}
             <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
             <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products</p>
           </div>
@@ -68,11 +81,12 @@ export default function Home() {
         </button>
       </div>
 
+      {/* BUTTONS - NOW ALL WORKING */}
       <div style={{ padding: "0 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button style={{ background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11 }}>Logout</button>
-        <button style={{ background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11 }}>Cart ({cart.length})</button>
-        <button style={{ background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11 }}>My Orders</button>
-        <button style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>Leadership Board</button>
+        <button onClick={() => setPanel("logout")} style={btnStyle}>Logout</button>
+        <button onClick={() => setPanel("cart")} style={btnStyle}>Cart ({cart.length})</button>
+        <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
+        <button onClick={() => setPanel("board")} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}>Leadership Board</button>
       </div>
 
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
@@ -101,6 +115,7 @@ export default function Home() {
         ))}
       </div>
 
+      {/* PRODUCT VIEW POPUP */}
       {selected && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -114,6 +129,77 @@ export default function Home() {
             <p style={{ color: "#b45309", fontWeight: 800, margin: "4px 0" }}>{selected.price} • Colour: {selected.color}</p>
             <p style={{ fontSize: 13, color: "#444" }}>{selected.desc}</p>
             <button onClick={() => { setCart([...cart, selected]); setSelected(null); }} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Add to Cart - {selected.price}</button>
+          </div>
+        </div>
+      )}
+
+      {/* CART PANEL */}
+      {panel === "cart" && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
+            <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
+            <h2 style={{ margin: "10px 0 4px" }}>🛒 Cart ({cart.length})</h2>
+            <p style={{ fontWeight: 800, color: "#b45309", margin: "0 0 10px" }}>Total: {total} Pi</p>
+            {cart.length === 0 && <p style={{ fontSize: 13, color: "#555" }}>Your cart is empty. Tap Add to Cart on any product.</p>}
+            {cart.map((item, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", padding: "8px 0" }}>
+                <div><div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div><div style={{ fontSize: 12, color: "#b45309" }}>{item.price} • {item.color}</div></div>
+                <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} style={{ background: "#ffdddd", border: 0, borderRadius: 8, padding: "6px 10px", fontSize: 12 }}>Remove</button>
+              </div>
+            ))}
+            {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 14 }}>Checkout - Pay {total} Pi</button>}
+          </div>
+        </div>
+      )}
+
+      {/* MY ORDERS PANEL */}
+      {panel === "orders" && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
+            <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
+            <h2 style={{ margin: "10px 0" }}>📦 My Orders ({orders.length})</h2>
+            {orders.length === 0 && <p style={{ fontSize: 13, color: "#555" }}>No orders yet. Add to Cart → Checkout to create your first order.</p>}
+            {orders.map((o) => (
+              <div key={o.id} style={{ border: "1px solid #eee", borderRadius: 10, padding: 10, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: "#777" }}>{o.date}</div>
+                <div style={{ fontWeight: 800, fontSize: 13 }}>Total: {o.total} Pi • {o.items.length} item(s)</div>
+                {o.items.map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} - {it.price}</div>)}
+                <div style={{ fontSize: 12, color: "green", fontWeight: 700, marginTop: 4 }}>Status: Order Received ✅</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* LEADERSHIP BOARD PANEL */}
+      {panel === "board" && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
+            <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
+            <h2 style={{ margin: "10px 0 4px" }}>🏆 Leadership Board</h2>
+            <p style={{ fontSize: 12, color: "#555" }}>Top SOSA buyers - buy more to climb!</p>
+            {[
+              { name: "@chijo09 (You)", pts: "0.0 pts", rank: "1" },
+              { name: "@sosa_fan1", pts: "12.5 pts", rank: "2" },
+              { name: "@lagos_queen", pts: "8.0 pts", rank: "3" },
+              { name: "@owambe_star", pts: "5.5 pts", rank: "4" },
+            ].map((u) => (
+              <div key={u.rank} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #eee", padding: "10px 0" }}>
+                <span style={{ fontWeight: 800, fontSize: 13 }}>#{u.rank} {u.name}</span><span style={{ color: "#b45309", fontWeight: 800 }}>{u.pts}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* LOGOUT PANEL */}
+      {panel === "logout" && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 360, borderRadius: 16, padding: 20, textAlign: "center" }}>
+            <h2 style={{ margin: "0 0 8px" }}>Logout?</h2>
+            <p style={{ fontSize: 13, color: "#555" }}>You are logged in as @chijo09. Do you want to logout?</p>
+            <button onClick={() => setPanel(null)} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Stay Logged In</button>
+            <button onClick={() => { alert("Logged out - refresh to login again"); setPanel(null); }} style={{ width: "100%", background: "#eee", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Yes, Logout</button>
           </div>
         </div>
       )}
