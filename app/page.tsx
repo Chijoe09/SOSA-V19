@@ -47,13 +47,27 @@ export default function Home() {
   const [orders, setOrders] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [dark, setDark] = useState(true);
-  // THIS IS THE FIX - which panel is open
   const [panel, setPanel] = useState<string | null>(null);
 
   const bg = dark ? "#000" : "#f2f2f2";
   const mainText = dark ? "#fff" : "#000";
   const subText2 = dark ? "#aaa" : "#777";
-  const total = cart.reduce((s, p) => s + parseFloat(p.price), 0).toFixed(2);
+
+  // CART WITH QTY - + / - / Remove all work
+  const addToCart = (p: any) => {
+    const found = cart.find((c) => c.id === p.id);
+    if (found) {
+      setCart(cart.map((c) => c.id === p.id ? { ...c, qty: c.qty + 1 } : c));
+    } else {
+      setCart([...cart, { ...p, qty: 1 }]);
+    }
+  };
+  const inc = (id: number) => setCart(cart.map((c) => c.id === id ? { ...c, qty: c.qty + 1 } : c));
+  const dec = (id: number) => setCart(cart.map((c) => c.id === id ? { ...c, qty: Math.max(1, c.qty - 1) } : c));
+  const removeItem = (id: number) => setCart(cart.filter((c) => c.id !== id));
+
+  const cartCount = cart.reduce((s, c) => s + c.qty, 0);
+  const total = cart.reduce((s, c) => s + parseFloat(c.price) * c.qty, 0).toFixed(2);
 
   const checkout = () => {
     if (cart.length === 0) return;
@@ -81,10 +95,9 @@ export default function Home() {
         </button>
       </div>
 
-      {/* BUTTONS - NOW ALL WORKING */}
       <div style={{ padding: "0 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>
         <button onClick={() => setPanel("logout")} style={btnStyle}>Logout</button>
-        <button onClick={() => setPanel("cart")} style={btnStyle}>Cart ({cart.length})</button>
+        <button onClick={() => setPanel("cart")} style={btnStyle}>Cart ({cartCount})</button>
         <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
         <button onClick={() => setPanel("board")} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}>Leadership Board</button>
       </div>
@@ -109,13 +122,12 @@ export default function Home() {
                 <select style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}><option>{p.color}</option><option>Black</option></select>
               </div>
               <button onClick={() => setSelected(p)} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>👁 View</button>
-              <button onClick={() => setCart([...cart, p])} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>Add to Cart</button>
+              <button onClick={() => addToCart(p)} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>Add to Cart</button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* PRODUCT VIEW POPUP */}
       {selected && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -128,23 +140,31 @@ export default function Home() {
             <p style={{ fontWeight: 800, margin: "10px 0 0" }}>{selected.name}</p>
             <p style={{ color: "#b45309", fontWeight: 800, margin: "4px 0" }}>{selected.price} • Colour: {selected.color}</p>
             <p style={{ fontSize: 13, color: "#444" }}>{selected.desc}</p>
-            <button onClick={() => { setCart([...cart, selected]); setSelected(null); }} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Add to Cart - {selected.price}</button>
+            <button onClick={() => { addToCart(selected); setSelected(null); }} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Add to Cart - {selected.price}</button>
           </div>
         </div>
       )}
 
-      {/* CART PANEL */}
+      {/* CART - WITH + / - AND REMOVE */}
       {panel === "cart" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
             <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
-            <h2 style={{ margin: "10px 0 4px" }}>🛒 Cart ({cart.length})</h2>
+            <h2 style={{ margin: "10px 0 4px" }}>🛒 Cart ({cartCount})</h2>
             <p style={{ fontWeight: 800, color: "#b45309", margin: "0 0 10px" }}>Total: {total} Pi</p>
             {cart.length === 0 && <p style={{ fontSize: 13, color: "#555" }}>Your cart is empty. Tap Add to Cart on any product.</p>}
-            {cart.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", padding: "8px 0" }}>
-                <div><div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div><div style={{ fontSize: 12, color: "#b45309" }}>{item.price} • {item.color}</div></div>
-                <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} style={{ background: "#ffdddd", border: 0, borderRadius: 8, padding: "6px 10px", fontSize: 12 }}>Remove</button>
+            {cart.map((item) => (
+              <div key={item.id} style={{ borderBottom: "1px solid #eee", padding: "10px 0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div><div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div><div style={{ fontSize: 12, color: "#b45309" }}>{item.price} • {item.color} • Qty: {item.qty} = {(parseFloat(item.price) * item.qty).toFixed(2)} Pi</div></div>
+                  <button onClick={() => removeItem(item.id)} style={{ background: "#ffdddd", border: 0, borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700 }}>Remove</button>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                  <button onClick={() => dec(item.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid #ddd", background: "#fff", fontSize: 18, fontWeight: 900 }}>−</button>
+                  <span style={{ fontWeight: 800, fontSize: 14, minWidth: 20, textAlign: "center" }}>{item.qty}</span>
+                  <button onClick={() => inc(item.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: 0, background: "#f5b301", fontSize: 18, fontWeight: 900 }}>+</button>
+                  <span style={{ fontSize: 11, color: "#777" }}>Tap + to add more, − to reduce</span>
+                </div>
               </div>
             ))}
             {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 14 }}>Checkout - Pay {total} Pi</button>}
@@ -152,7 +172,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MY ORDERS PANEL */}
       {panel === "orders" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -163,7 +182,7 @@ export default function Home() {
               <div key={o.id} style={{ border: "1px solid #eee", borderRadius: 10, padding: 10, marginBottom: 10 }}>
                 <div style={{ fontSize: 11, color: "#777" }}>{o.date}</div>
                 <div style={{ fontWeight: 800, fontSize: 13 }}>Total: {o.total} Pi • {o.items.length} item(s)</div>
-                {o.items.map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} - {it.price}</div>)}
+                {o.items.map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} x {it.qty} - {it.price}</div>)}
                 <div style={{ fontSize: 12, color: "green", fontWeight: 700, marginTop: 4 }}>Status: Order Received ✅</div>
               </div>
             ))}
@@ -171,7 +190,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* LEADERSHIP BOARD PANEL */}
       {panel === "board" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -192,7 +210,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* LOGOUT PANEL */}
       {panel === "logout" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 360, borderRadius: 16, padding: 20, textAlign: "center" }}>
