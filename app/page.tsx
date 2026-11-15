@@ -29,33 +29,15 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boolean }){
-  const fill = color==="Brown" ? "#8B4513" : "#111111";
-  const sole = color==="Brown" ? "#5C2E0E" : "#000000";
-  const size = big ? 170 : 110;
-  if(cat==="Flat"){
-    return (
-      <svg width={size} height={size*0.55} viewBox="0 0 200 110">
-        <path d="M12 72 Q18 52 45 48 Q70 44 95 48 L165 52 Q188 54 182 68 Q176 82 145 84 L30 86 Q10 86 12 72 Z" fill={fill} />
-        <rect x="10" y="84" width="175" height="9" rx="4" fill={sole} />
-      </svg>
-    );
-  }
-  if(cat==="Slide"){
-    return (
-      <svg width={size} height={size*0.55} viewBox="0 0 200 110">
-        <path d="M12 78 Q25 62 70 60 L170 62 Q190 64 184 76 Q178 88 140 88 L30 88 Q8 88 12 78 Z" fill={fill} />
-        <path d="M55 60 Q70 28 115 28 Q135 30 140 48 Q115 44 95 50 Q70 58 55 60 Z" fill={sole} />
-        <rect x="10" y="86" width="178" height="9" rx="4" fill={sole} />
-      </svg>
-    );
-  }
+// NO MORE FAKE DRAWINGS - Honest photo placeholder. Real photo goes here when you send it.
+function PhotoBox({ name, cat, color }:{ name:string, cat:string, color:string }){
   return (
-    <svg width={size} height={size*0.75} viewBox="0 0 200 150">
-      <path d="M12 98 C18 78 35 68 55 62 C75 56 95 52 110 44 C125 36 138 28 150 22 C158 18 168 18 170 26 C172 36 168 48 158 58 C148 68 138 76 128 82 L128 122 L114 122 L114 88 C90 96 45 104 12 98 Z" fill={fill} />
-      <path d="M10 98 C45 106 90 98 114 88 L114 96 C90 106 45 114 10 106 Z" fill={sole} />
-      <rect x="112" y="122" width="16" height="7" rx="2" fill={sole} />
-    </svg>
+    <div style={{background: color==="Brown" ? "#3E2A1A" : "#111", color:"#fff", borderRadius:12, padding:16, width:110, height:110, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", textAlign:"center", flexShrink:0}}>
+      <div style={{fontSize:10,letterSpacing:2,color:"orange",fontWeight:"bold"}}>SOSA • {cat.toUpperCase()}</div>
+      <div style={{fontSize:14,fontWeight:"bold",margin:"6px 0",lineHeight:1.2}}>{name}</div>
+      <div style={{fontSize:10,color:"#aaa"}}>📸 Photo Coming Soon</div>
+      <div style={{fontSize:10,marginTop:6,background: color==="Brown" ? "#8B4513" : "#fff", color: color==="Brown" ? "#fff" : "#000", padding:"3px 10px", borderRadius:20, fontWeight:"bold"}}>{color}</div>
+    </div>
   );
 }
 
@@ -293,17 +275,14 @@ export default function Home(){
 
       {view==="shop" && (
         <div>
-          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy. 1 product per row now - no overlap.</p>
-          {/* FIX: 1 COLUMN ONLY - Pi Browser cannot ghost 1 column */}
+          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE details before you buy.</p>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {PRODUCTS.map((p:any)=>{
               const col = selColor[p.name] || "Black";
               return (
                 <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:14,padding:14,display:"flex",gap:12,alignItems:"center"}}>
-                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer",flexShrink:0}}>
-                    <div style={{background:"#f5f5f5",borderRadius:12,padding:8,width:110,height:110,display:"flex",justifyContent:"center",alignItems:"center"}}>
-                      <ShoeIcon cat={p.cat} color={col} />
-                    </div>
+                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
+                    <PhotoBox name={p.name} cat={p.cat} color={col} />
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:"bold",fontSize:16}}>{p.name}</div>
@@ -334,22 +313,20 @@ export default function Home(){
       )}
 
       {view==="detail" && selected && (
-        <div key={selected.name + (selColor[selected.name]||"Black")} style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
+        <div style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
           <div style={{textAlign:"center",margin:"8px 0"}}>
-            <div style={{background:"#f5f5f5",borderRadius:16,padding:20,display:"flex",justifyContent:"center",alignItems:"center"}}>
-              <ShoeIcon cat={selected.cat} color={selColor[selected.name]||"Black"} big={true} />
-            </div>
-            <div style={{fontSize:11,color:"#888",marginTop:8}}>📸 Real photo coming soon - send your product photos to replace this drawing</div>
-            <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
-              <span style={{background: (selColor[selected.name]||"Black")==="Black"?"#000":"#8B4513",color:"#fff",padding:"6px 12px",borderRadius:20,fontSize:12}}>Colour: {selColor[selected.name]||"Black"}</span>
-              <span style={{background:"#eee",padding:"6px 12px",borderRadius:20,fontSize:12}}>Size: {selSize[selected.name]||"M"}</span>
+            <div style={{background: (selColor[selected.name]||"Black")==="Brown" ? "#3E2A1A" : "#111", color:"#fff", borderRadius:16, padding:24, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
+              <div style={{fontSize:11,letterSpacing:3,color:"orange",fontWeight:"bold"}}>SOSA • {selected.cat.toUpperCase()}</div>
+              <div style={{fontSize:22,fontWeight:"bold",margin:"10px 0"}}>{selected.name}</div>
+              <div style={{fontSize:12,color:"#aaa"}}>📸 Real photo coming soon</div>
+              <div style={{fontSize:12,marginTop:10,background: (selColor[selected.name]||"Black")==="Brown" ? "#8B4513" : "#fff", color: (selColor[selected.name]||"Black")==="Brown" ? "#fff" : "#000", padding:"6px 16px", borderRadius:20, fontWeight:"bold"}}>Colour: {selColor[selected.name]||"Black"} • Size: {selSize[selected.name]||"M"}</div>
             </div>
           </div>
-          <h2 style={{margin:0}}>{selected.name}</h2>
+          <h2 style={{margin:"12px 0 0 0"}}>{selected.name}</h2>
           <p style={{fontSize:20,fontWeight:"bold",color:"orange",margin:"6px 0"}}>{selected.price} Pi</p>
           <p style={{fontSize:13}}><b>What you are paying for:</b><br/>{selected.desc}</p>
           <p style={{fontSize:13,background:"#f5f5f5",padding:10,borderRadius:10}}>{selected.detail}<br/><br/>✅ Made in Nigeria<br/>✅ SOSA branded pack<br/>✅ Pickup at No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS or Delivery<br/>✅ Pay with Pi or Pay at Pickup (Barcode)</p>
-          <p style={{fontSize:12,fontWeight:"bold"}}>Pick Colour - shoe changes instantly:</p>
+          <p style={{fontSize:12,fontWeight:"bold"}}>Pick Colour:</p>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <button onClick={()=>setSelColor({...selColor,[selected.name]:"Black"})} style={{flex:1,padding:12,borderRadius:12,background:(selColor[selected.name]||"Black")==="Black"?"#000":"#fff",color:(selColor[selected.name]||"Black")==="Black"?"#fff":"#000",border:"2px solid #000",fontWeight:"bold"}}>⬛ Black</button>
             <button onClick={()=>setSelColor({...selColor,[selected.name]:"Brown"})} style={{flex:1,padding:12,borderRadius:12,background:(selColor[selected.name]||"Black")==="Brown"?"#8B4513":"#fff",color:(selColor[selected.name]||"Black")==="Brown"?"#fff":"#000",border:"2px solid #8B4513",fontWeight:"bold"}}>🟫 Brown</button>
@@ -400,7 +377,7 @@ export default function Home(){
           {cart.map((c:any,i:number)=>(
             <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8}}>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <ShoeIcon cat={c.cat || "Heel"} color={c.color} />
+                <PhotoBox name={c.name} cat={c.cat || "Heel"} color={c.color} />
                 <div style={{flex:1}}>
                   <b>{c.name}</b> - {c.color} / {c.size} - {c.price} Pi x {c.qty||1} = {(Number(c.price)*(c.qty||1)).toFixed(4)} Pi
                 </div>
