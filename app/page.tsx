@@ -29,19 +29,41 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-// Clean placeholder - NO fake drawing. Real photo replaces this later.
+// SOSA EGG LOGO - Top Left - Same as your PNG: striped egg, SOSA green on white, outfits white on green
+function SosaLogo({ size=56 }:{ size?:number }){
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 120" style={{flexShrink:0,borderRadius:12,background:"#FFF8DC"}}>
+      <defs>
+        <clipPath id="eggClip"><ellipse cx="50" cy="60" rx="42" ry="55" /></clipPath>
+      </defs>
+      <ellipse cx="50" cy="60" rx="42" ry="55" fill="#FFF8DC" />
+      <g clipPath="url(#eggClip)">
+        <rect x="0" y="0" width="100" height="18" fill="#fff" />
+        <rect x="0" y="14" width="100" height="12" fill="#0EA5E9" />
+        <rect x="0" y="26" width="100" height="18" fill="#fff" />
+        <rect x="0" y="44" width="100" height="18" fill="#FFC300" />
+        <rect x="0" y="62" width="100" height="14" fill="#fff" />
+        <rect x="0" y="76" width="100" height="18" fill="#E11D2E" />
+        <rect x="0" y="94" width="100" height="14" fill="#fff" />
+        <rect x="0" y="108" width="100" height="12" fill="#008A3D" />
+        <text x="50" y="105" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#008A3D" fontFamily="sans-serif">SOSA</text>
+        <text x="50" y="118" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#fff" fontFamily="sans-serif">outfits</text>
+      </g>
+    </svg>
+  );
+}
+
 function PhotoBox({ name, cat, color, grid=false }:{ name:string, cat:string, color:string, grid?:boolean }){
   return (
     <div style={{background: color==="Brown" ? "#3E2A1A" : "#111", color:"#fff", borderRadius:12, padding:12, width: grid ? "100%" : 110, height: grid ? 110 : 110, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", textAlign:"center", boxSizing:"border-box"}}>
       <div style={{fontSize:10,letterSpacing:2,color:"orange",fontWeight:"bold"}}>SOSA • {cat.toUpperCase()}</div>
-      <div style={{fontSize: grid ? 14 : 14,fontWeight:"bold",margin:"6px 0",lineHeight:1.2}}>{name}</div>
+      <div style={{fontSize:14,fontWeight:"bold",margin:"6px 0",lineHeight:1.2}}>{name}</div>
       <div style={{fontSize:10,color:"#aaa"}}>📸 Photo Coming Soon</div>
       <div style={{fontSize:10,marginTop:6,background: color==="Brown" ? "#8B4513" : "#fff", color: color==="Brown" ? "#fff" : "#000", padding:"3px 10px", borderRadius:20, fontWeight:"bold"}}>{color}</div>
     </div>
   );
 }
 
-// 16 PRODUCTS - #16 is NEW
 const PRODUCTS = [
   { name: "Classic Heel", price: 0.05, cat: "Heel", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
   { name: "Royal Heel", price: 0.04, cat: "Heel", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size." },
@@ -76,6 +98,20 @@ export default function Home(){
   const [paying, setPaying] = useState(false);
   const [selSize, setSelSize] = useState<any>({});
   const [selColor, setSelColor] = useState<any>({});
+  const [darkMode, setDarkMode] = useState(true);
+
+  // THEME - Dark = black like before, Light = cream like logo background
+  const T = darkMode
+    ? { bg:"#000", text:"#fff", sub:"#aaa", card:"#fff", cardText:"#000", panel:"#111", inputBg:"#fff", muted:"#aaa" }
+    : { bg:"#FFF8DC", text:"#111", sub:"#666", card:"#fff", cardText:"#000", panel:"#fff", inputBg:"#fff", muted:"#666" };
+
+  const toggleTheme = ()=>{
+    const next = !darkMode;
+    setDarkMode(next);
+    try{ localStorage.setItem("sosa_theme", next ? "dark" : "light"); }catch{}
+  };
+
+  const scrollTop = ()=>{ window.scrollTo({top:0, behavior:"smooth"}); };
 
   const reloadOrders = ()=>{
     try{
@@ -86,6 +122,11 @@ export default function Home(){
   };
 
   useEffect(()=>{
+    try{
+      const th = localStorage.getItem("sosa_theme");
+      if(th==="light") setDarkMode(false);
+      if(th==="dark") setDarkMode(true);
+    }catch{}
     reloadOrders();
     try{
       const c = JSON.parse(localStorage.getItem("sosa_cart")||"[]");
@@ -238,32 +279,43 @@ export default function Home(){
   };
 
   return (
-    <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
+    <div style={{background:T.bg,color:T.text,minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
       {view!=="shop" && (
-        <div style={{background:"#000",padding:"8px 0",marginBottom:8}}>
-          <button onClick={goShop} style={{padding:"10px 16px",borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
+        <div style={{background:T.bg,padding:"8px 0",marginBottom:8}}>
+          <button onClick={goShop} style={{padding:"10px 16px",borderRadius:10,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
         </div>
       )}
 
-      <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1,margin:0}}>SOPHISTICATED<br/>SAMPLES</h1>
-      <p style={{margin:"8px 0"}}>SOSA-outfits. Made in Nigeria</p>
-      <p style={{color:"orange",fontSize:13,margin:"0 0 12px 0"}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts | 16 Products</p>
+      {/* HEADER - Logo Top Left + Dark/Light Toggle Top Right - NO sticky, NO fixed */}
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
+        <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+          <SosaLogo size={62} />
+          <div>
+            <h1 style={{fontSize:26,fontWeight:"bold",lineHeight:1.1,margin:0}}>SOPHISTICATED<br/>SAMPLES</h1>
+            <p style={{margin:"6px 0 0 0",fontSize:13}}>SOSA-outfits. Made in Nigeria</p>
+            <p style={{color:"orange",fontSize:12,margin:"4px 0 0 0"}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts | 16 Products</p>
+          </div>
+        </div>
+        <button onClick={toggleTheme} style={{padding:"8px 10px",borderRadius:20,background: darkMode ? "#FFF8DC" : "#111",color: darkMode ? "#111" : "#fff",border: darkMode ? "1px solid #ddd" : "1px solid #111",fontWeight:"bold",fontSize:12,flexShrink:0}}>
+          {darkMode ? "☀️ Light" : "🌙 Dark"}
+        </button>
+      </div>
 
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12,marginTop:12}}>
         {!user ? (
-          <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>Login with Pi</button>
+          <button onClick={login} style={{padding:"6px 10px",borderRadius:6,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0}}>Login with Pi</button>
         ) : (
-          <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>Logout</button>
+          <button onClick={()=>{setUser(null); localStorage.removeItem("sosa_user");}} style={{padding:"6px 10px",borderRadius:6,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0}}>Logout</button>
         )}
-        <button onClick={()=>{reloadOrders(); setView("cart"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>Cart ({cartCount})</button>
-        <button onClick={()=>{reloadOrders(); setView("orders"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background:"#fff",color:"#000",border:0}}>My Orders</button>
+        <button onClick={()=>{reloadOrders(); setView("cart"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0}}>Cart ({cartCount})</button>
+        <button onClick={()=>{reloadOrders(); setView("orders"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0}}>My Orders</button>
         <button onClick={()=>{setView("leader"); window.scrollTo(0,0);}} style={{padding:"6px 10px",borderRadius:6,background:"orange",color:"#000",fontWeight:"bold",border:0}}>🏆 Leadership Board</button>
       </div>
 
       {view==="leader" && (
-        <div style={{background:"#111",padding:12,borderRadius:12}}>
+        <div style={{background:T.panel,padding:12,borderRadius:12,color:T.text}}>
           <h2>🏆 SOSA Leadership Board</h2>
-          <p style={{fontSize:12,color:"#aaa"}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
+          <p style={{fontSize:12,color:T.sub}}>Top buyers by ⭐ Points. More orders = more points = higher rank.</p>
           <p>Your Points: <b style={{color:"orange"}}>{points.toFixed(1)} pts</b></p>
           {leaders.length===0 && <p>No buyers yet. Be the first!</p>}
           {leaders.map((l:any,i:number)=>(
@@ -277,14 +329,13 @@ export default function Home(){
 
       {view==="shop" && (
         <div>
-          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE details before you buy. 16 Products - Grid View.</p>
-          {/* GRID VIEW - 2 per row */}
+          <p style={{fontSize:12,color:T.sub,marginBottom:8}}>👆 Tap any product to SEE details before you buy. 16 Products - Grid View.</p>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
             {PRODUCTS.map((p:any)=>{
               const col = selColor[p.name] || "Black";
               const isNew = p.name==="SOSA Signature Heel";
               return (
-                <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:14,padding:10,display:"flex",flexDirection:"column",overflow:"hidden",border: isNew ? "3px solid orange" : "none",boxSizing:"border-box"}}>
+                <div key={p.name} style={{background:T.card,color:T.cardText,borderRadius:14,padding:10,display:"flex",flexDirection:"column",overflow:"hidden",border: isNew ? "3px solid orange" : "none",boxSizing:"border-box"}}>
                   {isNew && <div style={{background:"orange",color:"#000",fontSize:10,fontWeight:"bold",textAlign:"center",padding:"3px",borderRadius:6,marginBottom:6}}>⭐ NEW #16 - FLAGSHIP</div>}
                   <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
                     <PhotoBox name={p.name} cat={p.cat} color={col} grid={true} />
@@ -306,10 +357,12 @@ export default function Home(){
               );
             })}
           </div>
-          <div style={{textAlign:"center",marginTop:24,paddingBottom:20}}>
-            <p style={{fontSize:11,color:"#666"}}>SOSA © 2026 • Made in Nigeria • Pickup: No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS</p>
-            <a href="/admin" style={{fontSize:10,color:"#333",textDecoration:"none"}}>• Owner •</a>
+          <div style={{textAlign:"center",marginTop:24,paddingBottom:8}}>
+            <p style={{fontSize:11,color:T.sub}}>SOSA © 2026 • Made in Nigeria • Pickup: No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS</p>
+            <a href="/admin" style={{fontSize:10,color:T.sub,textDecoration:"none"}}>• Owner •</a>
           </div>
+          {/* BACK UP - Down below, normal button, NOT sticky/fixed - safe */}
+          <button onClick={scrollTop} style={{width:"100%",padding:14,borderRadius:20,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0,fontWeight:"bold",fontSize:15,marginTop:10,marginBottom:20}}>^ Back Up</button>
         </div>
       )}
 
@@ -346,6 +399,7 @@ export default function Home(){
           </div>
           <button onClick={()=>{addToCart(selected,detailQty); setView("cart"); window.scrollTo(0,0);}} style={{width:"100%",padding:14,borderRadius:20,background:"orange",border:0,fontWeight:"bold",marginTop:12}}>Add to Cart - {(selected.price*detailQty).toFixed(4)} Pi</button>
           <button onClick={goShop} style={{width:"100%",padding:12,borderRadius:10,background:"#eee",border:0,marginTop:8}}>← Continue Shopping</button>
+          <button onClick={scrollTop} style={{width:"100%",padding:12,borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",marginTop:10}}>^ Back Up</button>
         </div>
       )}
 
@@ -368,11 +422,12 @@ export default function Home(){
               </div>
             );
           })}
+          <button onClick={scrollTop} style={{width:"100%",padding:12,borderRadius:20,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0,fontWeight:"bold",marginTop:16}}>^ Back Up</button>
         </div>
       )}
 
       {view==="cart" && (
-        <div style={{background:"#111",padding:12,borderRadius:12}}>
+        <div style={{background:T.panel,padding:12,borderRadius:12,color:T.text}}>
           <h2 style={{marginTop:0}}>Cart ({cartCount})</h2>
           {cart.length===0 && <p>Cart is empty. Go add a product.</p>}
           {cart.map((c:any,i:number)=>(
@@ -393,10 +448,10 @@ export default function Home(){
           ))}
           <p>Total: {total.toFixed(4)} Pi</p>
           <h3>--- CHECKOUT DETAILS ---</h3>
-          <input placeholder="Full Name *" value={custName} onChange={(e)=>setCustName(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0,boxSizing:"border-box"}} />
-          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone Number / WhatsApp *" value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g, ""))} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0,boxSizing:"border-box"}} />
-          <p style={{fontSize:11,color:"#aaa",marginTop:-4}}>Example: 08176675579 or +2348176675579 — numbers only</p>
-          <div style={{background:"#222",padding:10,borderRadius:10,fontSize:12,marginBottom:8}}>🏠 Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.<br/>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</div>
+          <input placeholder="Full Name *" value={custName} onChange={(e)=>setCustName(e.target.value)} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0,boxSizing:"border-box",background:T.inputBg,color:"#000"}} />
+          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone Number / WhatsApp *" value={custPhone} onChange={(e)=>setCustPhone(e.target.value.replace(/[^0-9+]/g, ""))} style={{width:"100%",padding:12,borderRadius:10,marginBottom:8,border:0,boxSizing:"border-box",background:T.inputBg,color:"#000"}} />
+          <p style={{fontSize:11,color:T.sub,marginTop:-4}}>Example: 08176675579 or +2348176675579 — numbers only</p>
+          <div style={{background: darkMode ? "#222" : "#eee",padding:10,borderRadius:10,fontSize:12,marginBottom:8}}>🏠 Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.<br/>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <button onClick={()=>setMethod("delivery")} style={{flex:1,padding:12,borderRadius:20,background:method==="delivery"?"orange":"#333",color:"#fff",border:0,fontWeight:"bold"}}>🚚 Delivery (+0.0001 Pi)</button>
             <button onClick={()=>setMethod("pickup")} style={{flex:1,padding:12,borderRadius:20,background:method==="pickup"?"orange":"#333",color:"#fff",border:0,fontWeight:"bold"}}>🏠 Self Pickup (Free)</button>
@@ -408,6 +463,7 @@ export default function Home(){
           <button onClick={payWithBarcode} style={{width:"100%",padding:14,borderRadius:20,background:"#fff",color:"#000",border:0,fontWeight:"bold"}}>Pay with Barcode at Pickup — Pay when you come to shop. Show barcode.</button>
           <p style={{fontSize:12,textAlign:"center"}}>Barcode = Reserve now, pay at pickup. No Pi taken now.</p>
           <button onClick={goShop} style={{width:"100%",padding:12,borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,marginTop:8}}>← Back to Shop</button>
+          <button onClick={scrollTop} style={{width:"100%",padding:12,borderRadius:20,background: darkMode ? "#fff" : "#000",color: darkMode ? "#000" : "#fff",border:0,fontWeight:"bold",marginTop:10}}>^ Back Up</button>
         </div>
       )}
     </div>
