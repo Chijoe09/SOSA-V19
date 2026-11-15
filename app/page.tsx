@@ -25,82 +25,69 @@ const PRODUCTS = [
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
-  const [size, setSize] = useState("M");
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div style={{ background: "#000", color: "#fff", minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
       {/* HEADER */}
-      <div className="p-3 flex justify-between items-start">
-        <div className="flex gap-2 items-center">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl">🌈</div>
-          <div>
-            <h1 className="text-[20px] leading-[1.1] font-black">SOPHISTICATED<br/>SAMPLES</h1>
-            <p className="text-[11px] text-gray-300">SOSA-outfits. Made in Nigeria</p>
-            <p className="text-[10px] text-gray-400">Pi SDK Ready @chijo09 | 0.0 pts | 18 Products</p>
-          </div>
-        </div>
-        <button className="bg-amber-300 text-black text-[11px] font-bold px-2 py-1 rounded-full">☀️ Light</button>
+      <div style={{ padding: "12px" }}>
+        <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
+        <p style={{ fontSize: 12, margin: "4px 0 0", color: "#ccc" }}>SOSA-outfits. Made in Nigeria</p>
+        <p style={{ fontSize: 11, margin: "2px 0 0", color: "#aaa" }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products</p>
       </div>
 
-      <div className="px-3 flex gap-2 flex-wrap">
-        <button className="bg-white text-black text-[11px] px-2 py-1 rounded-full">Logout</button>
-        <button className="bg-white text-black text-[11px] px-2 py-1 rounded-full">Cart ({cart.length})</button>
-        <button className="bg-white text-black text-[11px] px-2 py-1 rounded-full">My Orders</button>
-        <button className="bg-amber-400 text-black text-[11px] font-bold px-2 py-1 rounded-full">Leadership Board</button>
+      <div style={{ padding: "0 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button style={{ background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11 }}>Logout</button>
+        <button style={{ background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11 }}>Cart ({cart.length})</button>
+        <button style={{ background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11 }}>My Orders</button>
+        <button style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>Leadership Board</button>
       </div>
 
-      <p className="px-3 mt-2 text-[11px]">👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
+      <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
 
-      {/* GRID - 3 COLUMNS, SMALL BOXES, 6 PER SCREEN */}
-      <div className="grid grid-cols-3 gap-2 p-2 pb-4">
+      {/* GRID - 3 COLUMNS - INLINE STYLE, NO TAILWIND */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: 8 }}>
         {PRODUCTS.map((p) => (
-          <div key={p.id} className="bg-white text-black rounded-xl overflow-hidden border flex flex-col">
-            <div className="bg-black text-center px-1 py-2 h-[68px] flex flex-col justify-center">
-              <p className="text-[8px] text-amber-400 font-bold">{p.cat}</p>
-              <p className="text-[11px] font-bold text-white leading-tight">{p.name}</p>
-              <p className="text-[8px] text-gray-400">📷 Photo Coming Soon</p>
-              <span className="text-[8px] bg-white text-black px-1.5 py-0.5 rounded-full mx-auto mt-1">{p.color}</span>
+          <div key={p.id} style={{ background: "#fff", color: "#000", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ background: "#000", textAlign: "center", padding: "8px 4px", height: 70, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ color: "#f5b301", fontSize: 8, fontWeight: 700 }}>{p.cat}</div>
+              <div style={{ color: "#fff", fontSize: 11, fontWeight: 800, lineHeight: 1.2 }}>{p.name}</div>
+              <div style={{ color: "#aaa", fontSize: 8 }}>📷 Photo Coming Soon</div>
+              <div style={{ background: "#fff", color: "#000", fontSize: 8, borderRadius: 20, padding: "2px 6px", margin: "4px auto 0", display: "inline-block" }}>{p.color}</div>
             </div>
-            <div className="p-1.5 flex flex-col gap-1 flex-1">
-              <p className="text-[11px] font-bold leading-tight">{p.name}</p>
-              <p className="text-[11px] font-bold text-amber-600">{p.price} • {p.color}</p>
-              <p className="text-[9px] leading-[1.3] text-gray-600 line-clamp-3">{p.desc}</p>
-              <div className="flex gap-1 mt-auto">
-                <select value={size} onChange={(e)=>setSize(e.target.value)} className="flex-1 text-[9px] border rounded-md py-1 px-0.5 bg-white">
-                  <option>M</option><option>S</option><option>L</option><option>XL</option>
-                </select>
-                <select className="flex-1 text-[9px] border rounded-md py-1 px-0.5 bg-white">
-                  <option>{p.color}</option><option>Black</option>
-                </select>
+            <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, lineHeight: 1.2 }}>{p.name}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#b45309" }}>{p.price} • {p.color}</div>
+              <div style={{ fontSize: 9, lineHeight: 1.3, color: "#555", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
+              <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
+                <select style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}><option>M</option><option>S</option><option>L</option></select>
+                <select style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}><option>{p.color}</option><option>Black</option></select>
               </div>
-              <button onClick={()=>setSelected(p)} className="w-full bg-black text-white text-[10px] font-bold py-1.5 rounded-md">👁 View</button>
-              <button onClick={()=>setCart([...cart, p])} className="w-full bg-amber-400 text-black text-[10px] font-bold py-1.5 rounded-md">Add to Cart</button>
+              <button onClick={() => setSelected(p)} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>👁 View</button>
+              <button onClick={() => setCart([...cart, p])} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>Add to Cart</button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* VIEW MODAL - FULL INFO INTACT */}
       {selected && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center">
-          <div className="bg-white text-black w-full max-w-md rounded-t-2xl p-4">
-            <button onClick={()=>setSelected(null)} className="text-[12px] bg-black text-white px-3 py-1 rounded-full">← Back to Shop</button>
-            <div className="bg-black text-center py-4 rounded-xl mt-3">
-              <p className="text-amber-400 text-[10px] font-bold">{selected.cat}</p>
-              <p className="text-white font-bold text-[16px]">{selected.name}</p>
-              <p className="text-gray-400 text-[10px]">📷 Photo Coming Soon</p>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, borderRadius: "16px 16px 0 0", padding: 16 }}>
+            <button onClick={() => setSelected(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
+            <div style={{ background: "#000", textAlign: "center", padding: 14, borderRadius: 10, marginTop: 10 }}>
+              <div style={{ color: "#f5b301", fontSize: 10, fontWeight: 700 }}>{selected.cat}</div>
+              <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>{selected.name}</div>
+              <div style={{ color: "#aaa", fontSize: 10 }}>📷 Photo Coming Soon</div>
             </div>
-            <p className="font-bold mt-3">{selected.name}</p>
-            <p className="text-amber-600 font-bold">{selected.price} • Colour: {selected.color}</p>
-            <p className="text-[13px] text-gray-600 mt-1">{selected.desc}</p>
-            <p className="text-[12px] mt-2">What you are paying for: Elegant, comfortable, made in Nigeria. Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack.</p>
-            <button onClick={()=>{setCart([...cart, selected]); setSelected(null);}} className="w-full bg-amber-400 text-black font-bold py-2.5 rounded-full mt-3">Add to Cart - {selected.price}</button>
+            <p style={{ fontWeight: 800, margin: "10px 0 0" }}>{selected.name}</p>
+            <p style={{ color: "#b45309", fontWeight: 800, margin: "4px 0" }}>{selected.price} • Colour: {selected.color}</p>
+            <p style={{ fontSize: 13, color: "#444" }}>{selected.desc}</p>
+            <button onClick={() => { setCart([...cart, selected]); setSelected(null); }} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Add to Cart - {selected.price}</button>
           </div>
         </div>
       )}
 
-      <div className="text-center text-[10px] text-gray-400 pb-6 px-3">
-        SOSA © 2026 • Made in Nigeria • Pickup No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS<br/>• Owner •
+      <div style={{ textAlign: "center", fontSize: 10, color: "#888", padding: "10px" }}>
+        SOSA © 2026 • Made in Nigeria • Pickup No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS<br />• Owner •
       </div>
     </div>
   );
