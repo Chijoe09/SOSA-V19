@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const PRODUCTS = [
   { id: 1, name: "Classic Heel", cat: "SOSA • HEEL", price: "0.05 Pi", color: "Black", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria." },
@@ -48,33 +48,68 @@ export default function Home() {
   const [selected, setSelected] = useState<any>(null);
   const [dark, setDark] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
+  const [payStatus, setPayStatus] = useState<string>("");
+  const [piReady, setPiReady] = useState(false);
+
+  // LOAD REAL PI SDK
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://sdk.minepi.com/pi-sdk.js";
+    script.async = true;
+    script.onload = () => {
+      try {
+        (window as any).Pi.init({ version: "2.0", sandbox: false });
+        setPiReady(true);
+      } catch (e) { setPiReady(false); }
+    };
+    document.body.appendChild(script);
+  }, []);
 
   const bg = dark ? "#000" : "#f2f2f2";
   const mainText = dark ? "#fff" : "#000";
   const subText2 = dark ? "#aaa" : "#777";
 
-  // CART WITH QTY - + / - / Remove all work
   const addToCart = (p: any) => {
     const found = cart.find((c) => c.id === p.id);
-    if (found) {
-      setCart(cart.map((c) => c.id === p.id ? { ...c, qty: c.qty + 1 } : c));
-    } else {
-      setCart([...cart, { ...p, qty: 1 }]);
-    }
+    if (found) setCart(cart.map((c) => c.id === p.id ? { ...c, qty: c.qty + 1 } : c));
+    else setCart([...cart, { ...p, qty: 1 }]);
   };
   const inc = (id: number) => setCart(cart.map((c) => c.id === id ? { ...c, qty: c.qty + 1 } : c));
   const dec = (id: number) => setCart(cart.map((c) => c.id === id ? { ...c, qty: Math.max(1, c.qty - 1) } : c));
   const removeItem = (id: number) => setCart(cart.filter((c) => c.id !== id));
-
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const total = cart.reduce((s, c) => s + parseFloat(c.price) * c.qty, 0).toFixed(2);
 
-  const checkout = () => {
+  // REAL PI CHECKOUT
+  const checkout = async () => {
     if (cart.length === 0) return;
-    const newOrder = { id: Date.now(), items: [...cart], total, date: new Date().toLocaleString() };
-    setOrders([newOrder, ...orders]);
-    setCart([]);
-    setPanel("orders");
+    const Pi = (window as any).Pi;
+    if (!Pi) {
+      setPayStatus("❌ Pi wallet not found. Open this site INSIDE Pi Browser app, not Chrome. Go to Pi Browser > type sossa-v19.vercel.app");
+      return;
+    }
+    setPayStatus("⏳ Connecting to Pi wallet... Please approve in Pi Browser...");
+    try {
+      await Pi.authenticate(["username", "payments"], (p: any) => {});
+      const payment = await Pi.createPayment({
+        amount: parseFloat(total),
+        memo: "SOSA Outfits order - " + cart.map((c) => c.name + " x" + c.qty).join(", "),
+        metadata: { orderId: Date.now().toString(), items: cart },
+      }, {
+        onReadyForServerApproval: (paymentId: string) => { setPayStatus("⏳ Pi approved, waiting for server..."); },
+        onReadyForServerCompletion: (paymentId: string, txid: string) => {
+          const newOrder = { id: paymentId, items: [...cart], total, date: new Date().toLocaleString(), txid, status: "PAID ✅ Pi Payment Confirmed" };
+          setOrders([newOrder, ...orders]);
+          setCart([]);
+          setPayStatus("✅ PAYMENT SUCCESS! Pi Tx: " + txid);
+          setTimeout(() => { setPanel("orders"); setPayStatus(""); }, 1500);
+        },
+        onCancel: (paymentId: string) => { setPayStatus("❌ Payment cancelled by you. No Pi taken."); },
+        onError: (error: any) => { setPayStatus("❌ Payment error: " + (error?.message || "Try again in Pi Browser")); },
+      });
+    } catch (e: any) {
+      setPayStatus("❌ " + (e?.message || "Open in Pi Browser to pay. Chrome cannot pay Pi."));
+    }
   };
 
   const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
@@ -87,7 +122,7 @@ export default function Home() {
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
-            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products</p>
+            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products {piReady ? "• Pi Connected 🟢" : "• Loading Pi..."}</p>
           </div>
         </div>
         <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
@@ -145,13 +180,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* CART - WITH + / - AND REMOVE */}
       {panel === "cart" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
-            <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
+            <button onClick={() => { setPanel(null); setPayStatus(""); }} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
             <h2 style={{ margin: "10px 0 4px" }}>🛒 Cart ({cartCount})</h2>
             <p style={{ fontWeight: 800, color: "#b45309", margin: "0 0 10px" }}>Total: {total} Pi</p>
+            {payStatus && <div style={{ background: "#fff3cd", border: "1px solid #f5b301", borderRadius: 8, padding: 10, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>{payStatus}</div>}
             {cart.length === 0 && <p style={{ fontSize: 13, color: "#555" }}>Your cart is empty. Tap Add to Cart on any product.</p>}
             {cart.map((item) => (
               <div key={item.id} style={{ borderBottom: "1px solid #eee", padding: "10px 0" }}>
@@ -167,7 +202,8 @@ export default function Home() {
                 </div>
               </div>
             ))}
-            {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 14 }}>Checkout - Pay {total} Pi</button>}
+            {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 14 }}>Pay with Pi - {total} Pi</button>}
+            <p style={{ fontSize: 11, color: "#777", textAlign: "center", marginTop: 8 }}>Must open in Pi Browser app to pay real Pi. Chrome will show error.</p>
           </div>
         </div>
       )}
@@ -177,13 +213,14 @@ export default function Home() {
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
             <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
             <h2 style={{ margin: "10px 0" }}>📦 My Orders ({orders.length})</h2>
-            {orders.length === 0 && <p style={{ fontSize: 13, color: "#555" }}>No orders yet. Add to Cart → Checkout to create your first order.</p>}
+            {orders.length === 0 && <p style={{ fontSize: 13, color: "#555" }}>No paid orders yet. Pay with Pi in Pi Browser to create a real order.</p>}
             {orders.map((o) => (
               <div key={o.id} style={{ border: "1px solid #eee", borderRadius: 10, padding: 10, marginBottom: 10 }}>
                 <div style={{ fontSize: 11, color: "#777" }}>{o.date}</div>
-                <div style={{ fontWeight: 800, fontSize: 13 }}>Total: {o.total} Pi • {o.items.length} item(s)</div>
+                <div style={{ fontWeight: 800, fontSize: 13 }}>Total: {o.total} Pi</div>
                 {o.items.map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} x {it.qty} - {it.price}</div>)}
-                <div style={{ fontSize: 12, color: "green", fontWeight: 700, marginTop: 4 }}>Status: Order Received ✅</div>
+                <div style={{ fontSize: 12, color: "green", fontWeight: 700, marginTop: 4 }}>{o.status || "Status: Order Received ✅"}</div>
+                {o.txid && <div style={{ fontSize: 11, color: "#555", wordBreak: "break-all" }}>Tx: {o.txid}</div>}
               </div>
             ))}
           </div>
@@ -214,9 +251,9 @@ export default function Home() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 360, borderRadius: 16, padding: 20, textAlign: "center" }}>
             <h2 style={{ margin: "0 0 8px" }}>Logout?</h2>
-            <p style={{ fontSize: 13, color: "#555" }}>You are logged in as @chijo09. Do you want to logout?</p>
+            <p style={{ fontSize: 13, color: "#555" }}>You are logged in as @chijo09.</p>
             <button onClick={() => setPanel(null)} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Stay Logged In</button>
-            <button onClick={() => { alert("Logged out - refresh to login again"); setPanel(null); }} style={{ width: "100%", background: "#eee", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Yes, Logout</button>
+            <button onClick={() => { alert("Logged out"); setPanel(null); }} style={{ width: "100%", background: "#eee", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Yes, Logout</button>
           </div>
         </div>
       )}
