@@ -22,26 +22,44 @@ const PRODUCTS = [
   { id: 18, name: "Silver Bag", cat: "SOSA • BAG", price: "0.06 Pi", color: "Silver", desc: "Elegant silver bag for owambe, church & outing. Light, strong, premium finish." },
 ];
 
+// LOGO BACK - BUILT INTO CODE, NO FILE NEEDED - SOSA OUTFITS ATTACHED INSIDE EGG
+function SosaLogo() {
+  return (
+    <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width="54" height="60" viewBox="0 0 54 60" style={{ display: "block" }}>
+        <defs><clipPath id="egg2"><ellipse cx="27" cy="30" rx="25" ry="28" /></clipPath></defs>
+        <ellipse cx="27" cy="30" rx="25" ry="28" fill="#fff" />
+        <g clipPath="url(#egg2)">
+          <rect x="0" y="0" width="54" height="60" fill="#fff" />
+          <path d="M0 12 Q27 4 54 10 L54 20 Q27 12 0 20 Z" fill="#0096e6" />
+          <path d="M0 26 Q27 18 54 24 L54 34 Q27 26 0 34 Z" fill="#ffc107" />
+          <path d="M0 40 Q27 32 54 38 L54 48 Q27 40 0 48 Z" fill="#e53935" />
+          <path d="M0 52 Q27 44 54 52 L54 60 L0 60 Z" fill="#00843d" />
+        </g>
+        <text x="27" y="52" textAnchor="middle" style={{ fontSize: 8.5, fontWeight: 900, fill: "#00843d", fontFamily: "Arial" }}>SOSA</text>
+        <text x="27" y="59" textAnchor="middle" style={{ fontSize: 6.5, fontWeight: 700, fill: "#fff", fontFamily: "Arial" }}>Outfits</text>
+      </svg>
+    </div>
+  );
+}
+
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [dark, setDark] = useState(true);
   const bg = dark ? "#000" : "#f2f2f2";
   const mainText = dark ? "#fff" : "#000";
-  const subText = dark ? "#ccc" : "#555";
   const subText2 = dark ? "#aaa" : "#777";
 
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          {/* LOGO TOP LEFT - SOSA OUTFITS ATTACHED INSIDE LOGO, NOT SEPARATE */}
-          <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
-            <img src="/logo.png" alt="SOSA Outfits" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-          </div>
+          <SosaLogo />
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
-            <p style={{ fontSize: 12, margin: "4px 0 0", color: subText }}>SOSA-outfits. Made in Nigeria</p>
+            {/* SOSA OUTFITS - BOLDER - MADE IN NIGERIA REMOVED HERE */}
+            <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
             <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products</p>
           </div>
         </div>
