@@ -29,17 +29,15 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-// Heel = CORRECTED side-profile, Flat & Slide also fixed, single draw only
 function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boolean }){
   const fill = color==="Brown" ? "#8B4513" : "#111111";
   const sole = color==="Brown" ? "#5C2E0E" : "#000000";
-  const size = big ? 170 : 84;
+  const size = big ? 170 : 110;
   if(cat==="Flat"){
     return (
       <svg width={size} height={size*0.55} viewBox="0 0 200 110">
         <path d="M12 72 Q18 52 45 48 Q70 44 95 48 L165 52 Q188 54 182 68 Q176 82 145 84 L30 86 Q10 86 12 72 Z" fill={fill} />
         <rect x="10" y="84" width="175" height="9" rx="4" fill={sole} />
-        <ellipse cx="45" cy="58" rx="12" ry="5" fill="#fff" opacity="0.2" />
       </svg>
     );
   }
@@ -57,7 +55,6 @@ function ShoeIcon({ cat, color, big=false }:{ cat:string, color:string, big?:boo
       <path d="M12 98 C18 78 35 68 55 62 C75 56 95 52 110 44 C125 36 138 28 150 22 C158 18 168 18 170 26 C172 36 168 48 158 58 C148 68 138 76 128 82 L128 122 L114 122 L114 88 C90 96 45 104 12 98 Z" fill={fill} />
       <path d="M10 98 C45 106 90 98 114 88 L114 96 C90 106 45 114 10 106 Z" fill={sole} />
       <rect x="112" y="122" width="16" height="7" rx="2" fill={sole} />
-      <path d="M30 88 C40 76 55 70 70 66" stroke="#fff" strokeWidth="3" fill="none" opacity="0.25" strokeLinecap="round" />
     </svg>
   );
 }
@@ -257,8 +254,7 @@ export default function Home(){
   };
 
   return (
-    <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif",overflowX:"hidden"}}>
-      {/* FIX: NO sticky - sticky was causing ghost / double paint on Pi Browser scroll */}
+    <div style={{background:"#000",color:"#fff",minHeight:"100vh",padding:16,fontFamily:"sans-serif"}}>
       {view!=="shop" && (
         <div style={{background:"#000",padding:"8px 0",marginBottom:8}}>
           <button onClick={goShop} style={{padding:"10px 16px",borderRadius:10,background:"#fff",color:"#000",fontWeight:"bold",border:0,width:"100%"}}>← Back to Shop</button>
@@ -297,31 +293,35 @@ export default function Home(){
 
       {view==="shop" && (
         <div>
-          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy.</p>
-          {/* FIX: Fixed card height + overflow hidden + clear gap - cards cannot overlap */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
-            {PRODUCTS.map((p:any,i:number)=>{
+          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE it before you buy. 1 product per row now - no overlap.</p>
+          {/* FIX: 1 COLUMN ONLY - Pi Browser cannot ghost 1 column */}
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {PRODUCTS.map((p:any)=>{
               const col = selColor[p.name] || "Black";
               return (
-                <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:12,padding:12,textAlign:"center",overflow:"hidden",minHeight:260,display:"flex",flexDirection:"column"}}>
-                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer",flex:1}}>
-                    <div style={{background:"#f5f5f5",borderRadius:10,padding:10,display:"flex",justifyContent:"center",height:90,alignItems:"center",overflow:"hidden"}}>
+                <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:14,padding:14,display:"flex",gap:12,alignItems:"center"}}>
+                  <div onClick={()=>openDetail(p)} style={{cursor:"pointer",flexShrink:0}}>
+                    <div style={{background:"#f5f5f5",borderRadius:12,padding:8,width:110,height:110,display:"flex",justifyContent:"center",alignItems:"center"}}>
                       <ShoeIcon cat={p.cat} color={col} />
                     </div>
-                    <div style={{fontWeight:"bold",marginTop:6}}>{p.name}</div>
-                    <div style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi</div>
-                    <div style={{fontSize:11,color:"#666"}}>{p.cat} • Colour: {col}</div>
                   </div>
-                  <div style={{display:"flex",gap:4,marginTop:8}}>
-                    <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd",minWidth:0}}>
-                      <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
-                    </select>
-                    <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd",minWidth:0}}>
-                      <option value="Black">Black</option><option value="Brown">Brown</option>
-                    </select>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:"bold",fontSize:16}}>{p.name}</div>
+                    <div style={{fontSize:15,fontWeight:"bold",color:"orange"}}>{p.price} Pi • {p.cat} • {col}</div>
+                    <div style={{fontSize:12,color:"#666",margin:"4px 0"}}>{p.desc}</div>
+                    <div style={{display:"flex",gap:6,marginTop:6}}>
+                      <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:8,borderRadius:8,border:"1px solid #ddd",fontSize:14}}>
+                        <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
+                      </select>
+                      <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:8,borderRadius:8,border:"1px solid #ddd",fontSize:14}}>
+                        <option value="Black">Black</option><option value="Brown">Brown</option>
+                      </select>
+                    </div>
+                    <div style={{display:"flex",gap:6,marginTop:8}}>
+                      <button onClick={()=>openDetail(p)} style={{flex:1,padding:"10px 8px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",fontSize:13}}>👁️ View</button>
+                      <button onClick={()=>addToCart(p,1)} style={{flex:1,padding:"10px 8px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",fontSize:13}}>Add to Cart</button>
+                    </div>
                   </div>
-                  <button onClick={()=>openDetail(p)} style={{marginTop:8,padding:"10px 14px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",width:"100%"}}>👁️ View Product</button>
-                  <button onClick={()=>addToCart(p,1)} style={{marginTop:6,padding:"10px 14px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%"}}>Add to Cart</button>
                 </div>
               );
             })}
@@ -334,9 +334,9 @@ export default function Home(){
       )}
 
       {view==="detail" && selected && (
-        <div key={selected.name + (selColor[selected.name]||"Black")} style={{background:"#fff",color:"#000",borderRadius:12,padding:16,overflow:"hidden"}}>
+        <div key={selected.name + (selColor[selected.name]||"Black")} style={{background:"#fff",color:"#000",borderRadius:12,padding:16}}>
           <div style={{textAlign:"center",margin:"8px 0"}}>
-            <div style={{background:"#f5f5f5",borderRadius:16,padding:20,display:"flex",justifyContent:"center",height:180,alignItems:"center",overflow:"hidden"}}>
+            <div style={{background:"#f5f5f5",borderRadius:16,padding:20,display:"flex",justifyContent:"center",alignItems:"center"}}>
               <ShoeIcon cat={selected.cat} color={selColor[selected.name]||"Black"} big={true} />
             </div>
             <div style={{fontSize:11,color:"#888",marginTop:8}}>📸 Real photo coming soon - send your product photos to replace this drawing</div>
@@ -379,7 +379,7 @@ export default function Home(){
             const f = getFlags(o);
             const statusText = f.delivered ? "Delivered" : f.sent ? "Sent" : f.paid ? "Paid" : "Pending - Pay at Pickup";
             return (
-              <div key={i} style={{background:"#fff",color:"#000",padding:12,borderRadius:12,marginTop:10,overflow:"hidden"}}>
+              <div key={i} style={{background:"#fff",color:"#000",padding:12,borderRadius:12,marginTop:10}}>
                 <b>{o.id}</b><br/>{o.date}<br/>Items: {o.items}<br/>Total: {o.total} Pi<br/>Phone: {fmtPhone(o.phone)}<br/>
                 Status: <b style={{color: f.delivered||f.paid ? "#16a34a" : "orange"}}>{statusText}</b><br/>
                 <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -394,11 +394,11 @@ export default function Home(){
       )}
 
       {view==="cart" && (
-        <div style={{background:"#111",padding:12,borderRadius:12,overflow:"hidden"}}>
+        <div style={{background:"#111",padding:12,borderRadius:12}}>
           <h2 style={{marginTop:0}}>Cart ({cartCount})</h2>
           {cart.length===0 && <p>Cart is empty. Go add a product.</p>}
           {cart.map((c:any,i:number)=>(
-            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8,overflow:"hidden"}}>
+            <div key={i} style={{background:"#fff",color:"#000",padding:10,borderRadius:10,marginBottom:8}}>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <ShoeIcon cat={c.cat || "Heel"} color={c.color} />
                 <div style={{flex:1}}>
