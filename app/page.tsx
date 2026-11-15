@@ -22,12 +22,32 @@ const PRODUCTS = [
   { id: 18, name: "Silver Bag", cat: "SOSA • BAG", price: "0.06 Pi", color: "Silver", desc: "Elegant silver bag for owambe, church & outing. Light, strong, premium finish." },
 ];
 
+// YOUR EXACT LOGO - EGG, BLUE / YELLOW / RED STRIPES, SOSA OUTFITS GREEN - TOP LEFT ONLY
+function SosaLogo() {
+  return (
+    <svg width="52" height="62" viewBox="0 0 100 120" style={{ flexShrink: 0, display: "block" }}>
+      <defs>
+        <clipPath id="eggClip"><ellipse cx="50" cy="60" rx="42" ry="55" /></clipPath>
+      </defs>
+      <ellipse cx="50" cy="60" rx="42" ry="55" fill="#fff" />
+      <g clipPath="url(#eggClip)">
+        <rect x="0" y="0" width="100" height="120" fill="#fff" />
+        <path d="M0 28 Q50 12 100 22 L100 38 Q50 24 0 40 Z" fill="#0096e6" />
+        <path d="M0 52 Q50 36 100 48 L100 68 Q50 54 0 68 Z" fill="#ffc107" />
+        <path d="M0 82 Q50 66 100 78 L100 96 Q50 82 0 96 Z" fill="#e53935" />
+        <path d="M0 106 Q50 92 100 106 L100 120 L0 120 Z" fill="#00843d" />
+      </g>
+      <ellipse cx="50" cy="60" rx="42" ry="55" fill="none" stroke="#fff" strokeWidth="2" />
+      <text x="50" y="104" textAnchor="middle" style={{ fontSize: 15, fontWeight: 900, fill: "#00843d", fontFamily: "Arial" }}>SOSA</text>
+      <text x="50" y="116" textAnchor="middle" style={{ fontSize: 10, fontWeight: 700, fill: "#fff", fontFamily: "Arial" }}>Outfits</text>
+    </svg>
+  );
+}
+
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [dark, setDark] = useState(true);
-
-  // DARK / LIGHT COLOURS - this is what makes the button functional
   const bg = dark ? "#000" : "#f2f2f2";
   const mainText = dark ? "#fff" : "#000";
   const subText = dark ? "#ccc" : "#555";
@@ -35,21 +55,16 @@ export default function Home() {
 
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
-      {/* HEADER - LOGO TOP LEFT + TITLE + DARK/LIGHT BUTTON */}
+      {/* HEADER - YOUR LOGO TOP LEFT */}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* SAME LOGO - TOP LEFT */}
-          <div style={{ width: 48, height: 48, borderRadius: 10, background: "linear-gradient(135deg,#ff0000,#ff9a00,#ffee00,#00c853,#0066ff,#8e24aa)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", flexShrink: 0 }}>
-            <div style={{ fontSize: 16, lineHeight: 1 }}>🌈</div>
-            <div style={{ fontSize: 9, fontWeight: 900, color: "#fff", background: "#000", padding: "1px 4px", borderRadius: 4, marginTop: 1 }}>SOSA</div>
-          </div>
+          <SosaLogo />
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 12, margin: "4px 0 0", color: subText }}>SOSA-outfits. Made in Nigeria</p>
             <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products</p>
           </div>
         </div>
-        {/* DARK / LIGHT BUTTON - FUNCTIONAL */}
         <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
           {dark ? "☀️ Light" : "🌙 Dark"}
         </button>
@@ -64,7 +79,6 @@ export default function Home() {
 
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
 
-      {/* GRID - 3 COLUMNS - UNCHANGED */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: 8 }}>
         {PRODUCTS.map((p) => (
           <div key={p.id} style={{ background: "#fff", color: "#000", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -106,7 +120,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* FOOTER + BACK UP BUTTON */}
       <div style={{ textAlign: "center", fontSize: 10, color: subText2, padding: "10px 10px 0" }}>
         SOSA © 2026 • Made in Nigeria • Pickup No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS<br />• Owner •
       </div>
