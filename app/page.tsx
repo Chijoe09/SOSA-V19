@@ -22,28 +22,6 @@ const PRODUCTS = [
   { id: 18, name: "Silver Bag", cat: "SOSA • BAG", price: "0.06 Pi", color: "Silver", desc: "Elegant silver bag for owambe, church & outing. Light, strong, premium finish." },
 ];
 
-// YOUR EXACT LOGO - EGG, BLUE / YELLOW / RED STRIPES, SOSA OUTFITS GREEN - TOP LEFT ONLY
-function SosaLogo() {
-  return (
-    <svg width="52" height="62" viewBox="0 0 100 120" style={{ flexShrink: 0, display: "block" }}>
-      <defs>
-        <clipPath id="eggClip"><ellipse cx="50" cy="60" rx="42" ry="55" /></clipPath>
-      </defs>
-      <ellipse cx="50" cy="60" rx="42" ry="55" fill="#fff" />
-      <g clipPath="url(#eggClip)">
-        <rect x="0" y="0" width="100" height="120" fill="#fff" />
-        <path d="M0 28 Q50 12 100 22 L100 38 Q50 24 0 40 Z" fill="#0096e6" />
-        <path d="M0 52 Q50 36 100 48 L100 68 Q50 54 0 68 Z" fill="#ffc107" />
-        <path d="M0 82 Q50 66 100 78 L100 96 Q50 82 0 96 Z" fill="#e53935" />
-        <path d="M0 106 Q50 92 100 106 L100 120 L0 120 Z" fill="#00843d" />
-      </g>
-      <ellipse cx="50" cy="60" rx="42" ry="55" fill="none" stroke="#fff" strokeWidth="2" />
-      <text x="50" y="104" textAnchor="middle" style={{ fontSize: 15, fontWeight: 900, fill: "#00843d", fontFamily: "Arial" }}>SOSA</text>
-      <text x="50" y="116" textAnchor="middle" style={{ fontSize: 10, fontWeight: 700, fill: "#fff", fontFamily: "Arial" }}>Outfits</text>
-    </svg>
-  );
-}
-
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
@@ -55,10 +33,16 @@ export default function Home() {
 
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
-      {/* HEADER - YOUR LOGO TOP LEFT */}
+      {/* HEADER - SAME FORMAT AS YOUR VIDEO */}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <SosaLogo />
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+          {/* LOGO - SQUARE BOX, REAL PHOTO, NO STRETCH, CLEAR TEXT */}
+          <div style={{ width: 64, flexShrink: 0, textAlign: "center" }}>
+            <div style={{ width: 64, height: 64, background: "#FFF8DC", borderRadius: 12, overflow: "hidden", padding: 4, boxSizing: "border-box" }}>
+              <img src="/logo.png" alt="SOSA Outfits" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 900, color: "#00843d", lineHeight: 1.1, marginTop: 2, background: "#fff", borderRadius: 4, padding: "1px 0" }}>SOSA<br /><span style={{ fontSize: 9, fontWeight: 700 }}>Outfits</span></div>
+          </div>
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 12, margin: "4px 0 0", color: subText }}>SOSA-outfits. Made in Nigeria</p>
