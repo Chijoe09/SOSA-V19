@@ -29,18 +29,19 @@ function getFlags(o:any){
   return { paid:false, sent:false, delivered:false };
 }
 
-// NO MORE FAKE DRAWINGS - Honest photo placeholder. Real photo goes here when you send it.
-function PhotoBox({ name, cat, color }:{ name:string, cat:string, color:string }){
+// Clean placeholder - NO fake drawing. Real photo replaces this later.
+function PhotoBox({ name, cat, color, grid=false }:{ name:string, cat:string, color:string, grid?:boolean }){
   return (
-    <div style={{background: color==="Brown" ? "#3E2A1A" : "#111", color:"#fff", borderRadius:12, padding:16, width:110, height:110, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", textAlign:"center", flexShrink:0}}>
+    <div style={{background: color==="Brown" ? "#3E2A1A" : "#111", color:"#fff", borderRadius:12, padding:12, width: grid ? "100%" : 110, height: grid ? 110 : 110, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", textAlign:"center", boxSizing:"border-box"}}>
       <div style={{fontSize:10,letterSpacing:2,color:"orange",fontWeight:"bold"}}>SOSA • {cat.toUpperCase()}</div>
-      <div style={{fontSize:14,fontWeight:"bold",margin:"6px 0",lineHeight:1.2}}>{name}</div>
+      <div style={{fontSize: grid ? 14 : 14,fontWeight:"bold",margin:"6px 0",lineHeight:1.2}}>{name}</div>
       <div style={{fontSize:10,color:"#aaa"}}>📸 Photo Coming Soon</div>
       <div style={{fontSize:10,marginTop:6,background: color==="Brown" ? "#8B4513" : "#fff", color: color==="Brown" ? "#fff" : "#000", padding:"3px 10px", borderRadius:20, fontWeight:"bold"}}>{color}</div>
     </div>
   );
 }
 
+// 16 PRODUCTS - #16 is NEW
 const PRODUCTS = [
   { name: "Classic Heel", price: 0.05, cat: "Heel", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size. Comes in SOSA branded pack." },
   { name: "Royal Heel", price: 0.04, cat: "Heel", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions.", detail: "Heel height: Medium. Material: Quality leather-like. Fitting: True to size." },
@@ -57,6 +58,7 @@ const PRODUCTS = [
   { name: "Lagos Palm Slide", price: 0.03, cat: "Slide", desc: "Lagos palm slide for home & street. Light & strong.", detail: "Everyday slide." },
   { name: "Executive Palm Slide", price: 0.05, cat: "Slide", desc: "Executive palm slide - clean look for smart casual.", detail: "Smart casual slide." },
   { name: "Heritage Palm Slide", price: 0.04, cat: "Slide", desc: "Heritage palm slide - our signature Nigerian slide.", detail: "Heritage collection. Signature design." },
+  { name: "SOSA Signature Heel", price: 0.06, cat: "Heel", desc: "⭐ NEW #16 - Our flagship. Signature SOSA heel, premium finish, limited stock. The one everyone will ask about.", detail: "SOSA SIGNATURE - Premium flagship. Heel height: High. Material: Premium. Limited stock. Comes in special SOSA Signature pack + free gift." },
 ];
 
 export default function Home(){
@@ -245,7 +247,7 @@ export default function Home(){
 
       <h1 style={{fontSize:28,fontWeight:"bold",lineHeight:1.1,margin:0}}>SOPHISTICATED<br/>SAMPLES</h1>
       <p style={{margin:"8px 0"}}>SOSA-outfits. Made in Nigeria</p>
-      <p style={{color:"orange",fontSize:13,margin:"0 0 12px 0"}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts</p>
+      <p style={{color:"orange",fontSize:13,margin:"0 0 12px 0"}}>Pi SDK Ready @chijoe09 | {points.toFixed(1)} pts | 16 Products</p>
 
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
         {!user ? (
@@ -275,32 +277,31 @@ export default function Home(){
 
       {view==="shop" && (
         <div>
-          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE details before you buy.</p>
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <p style={{fontSize:12,color:"#aaa",marginBottom:8}}>👆 Tap any product to SEE details before you buy. 16 Products - Grid View.</p>
+          {/* GRID VIEW - 2 per row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
             {PRODUCTS.map((p:any)=>{
               const col = selColor[p.name] || "Black";
+              const isNew = p.name==="SOSA Signature Heel";
               return (
-                <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:14,padding:14,display:"flex",gap:12,alignItems:"center"}}>
+                <div key={p.name} style={{background:"#fff",color:"#000",borderRadius:14,padding:10,display:"flex",flexDirection:"column",overflow:"hidden",border: isNew ? "3px solid orange" : "none",boxSizing:"border-box"}}>
+                  {isNew && <div style={{background:"orange",color:"#000",fontSize:10,fontWeight:"bold",textAlign:"center",padding:"3px",borderRadius:6,marginBottom:6}}>⭐ NEW #16 - FLAGSHIP</div>}
                   <div onClick={()=>openDetail(p)} style={{cursor:"pointer"}}>
-                    <PhotoBox name={p.name} cat={p.cat} color={col} />
+                    <PhotoBox name={p.name} cat={p.cat} color={col} grid={true} />
+                    <div style={{fontWeight:"bold",fontSize:14,marginTop:8,lineHeight:1.2,minHeight:34}}>{p.name}</div>
+                    <div style={{fontSize:14,fontWeight:"bold",color:"orange"}}>{p.price} Pi • {p.cat} • {col}</div>
+                    <div style={{fontSize:11,color:"#666",margin:"4px 0",lineHeight:1.3,minHeight:44}}>{p.desc}</div>
                   </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:"bold",fontSize:16}}>{p.name}</div>
-                    <div style={{fontSize:15,fontWeight:"bold",color:"orange"}}>{p.price} Pi • {p.cat} • {col}</div>
-                    <div style={{fontSize:12,color:"#666",margin:"4px 0"}}>{p.desc}</div>
-                    <div style={{display:"flex",gap:6,marginTop:6}}>
-                      <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:8,borderRadius:8,border:"1px solid #ddd",fontSize:14}}>
-                        <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
-                      </select>
-                      <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:8,borderRadius:8,border:"1px solid #ddd",fontSize:14}}>
-                        <option value="Black">Black</option><option value="Brown">Brown</option>
-                      </select>
-                    </div>
-                    <div style={{display:"flex",gap:6,marginTop:8}}>
-                      <button onClick={()=>openDetail(p)} style={{flex:1,padding:"10px 8px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",fontSize:13}}>👁️ View</button>
-                      <button onClick={()=>addToCart(p,1)} style={{flex:1,padding:"10px 8px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",fontSize:13}}>Add to Cart</button>
-                    </div>
+                  <div style={{display:"flex",gap:4,marginTop:6}}>
+                    <select value={selSize[p.name]||"M"} onChange={(e)=>setSelSize({...selSize,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd",fontSize:12,minWidth:0}}>
+                      <option value="S">Size S</option><option value="M">Size M</option><option value="L">Size L</option><option value="XL">Size XL</option><option value="XXL">Size XXL</option>
+                    </select>
+                    <select value={col} onChange={(e)=>setSelColor({...selColor,[p.name]:e.target.value})} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ddd",fontSize:12,minWidth:0}}>
+                      <option value="Black">Black</option><option value="Brown">Brown</option>
+                    </select>
                   </div>
+                  <button onClick={()=>openDetail(p)} style={{marginTop:8,padding:"9px 8px",borderRadius:20,background:"#000",color:"#fff",border:0,fontWeight:"bold",width:"100%",fontSize:12}}>👁️ View</button>
+                  <button onClick={()=>addToCart(p,1)} style={{marginTop:6,padding:"9px 8px",borderRadius:20,background:"orange",border:0,fontWeight:"bold",width:"100%",fontSize:12}}>Add to Cart</button>
                 </div>
               );
             })}
@@ -317,7 +318,7 @@ export default function Home(){
           <div style={{textAlign:"center",margin:"8px 0"}}>
             <div style={{background: (selColor[selected.name]||"Black")==="Brown" ? "#3E2A1A" : "#111", color:"#fff", borderRadius:16, padding:24, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
               <div style={{fontSize:11,letterSpacing:3,color:"orange",fontWeight:"bold"}}>SOSA • {selected.cat.toUpperCase()}</div>
-              <div style={{fontSize:22,fontWeight:"bold",margin:"10px 0"}}>{selected.name}</div>
+              <div style={{fontSize:22,fontWeight:"bold",margin:"10px 0",textAlign:"center"}}>{selected.name}</div>
               <div style={{fontSize:12,color:"#aaa"}}>📸 Real photo coming soon</div>
               <div style={{fontSize:12,marginTop:10,background: (selColor[selected.name]||"Black")==="Brown" ? "#8B4513" : "#fff", color: (selColor[selected.name]||"Black")==="Brown" ? "#fff" : "#000", padding:"6px 16px", borderRadius:20, fontWeight:"bold"}}>Colour: {selColor[selected.name]||"Black"} • Size: {selSize[selected.name]||"M"}</div>
             </div>
