@@ -33,15 +33,11 @@ export default function Home() {
 
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
-      {/* HEADER - SAME FORMAT AS YOUR VIDEO */}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          {/* LOGO - SQUARE BOX, REAL PHOTO, NO STRETCH, CLEAR TEXT */}
-          <div style={{ width: 64, flexShrink: 0, textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, background: "#FFF8DC", borderRadius: 12, overflow: "hidden", padding: 4, boxSizing: "border-box" }}>
-              <img src="/logo.png" alt="SOSA Outfits" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 900, color: "#00843d", lineHeight: 1.1, marginTop: 2, background: "#fff", borderRadius: 4, padding: "1px 0" }}>SOSA<br /><span style={{ fontSize: 9, fontWeight: 700 }}>Outfits</span></div>
+          {/* LOGO TOP LEFT - SOSA OUTFITS ATTACHED INSIDE LOGO, NOT SEPARATE */}
+          <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
+            <img src="/logo.png" alt="SOSA Outfits" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
           </div>
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
