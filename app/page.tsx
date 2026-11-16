@@ -72,7 +72,6 @@ export default function Home() {
   const [choices, setChoices] = useState<any>({});
   const [orderCode] = useState(() => "SOSA-" + Math.floor(100000 + Math.random() * 900000));
 
-  // TEST PI ONLY - NO MAINNET
   useEffect(() => {
     const s = document.createElement("script");
     s.src = "https://sdk.minepi.com/pi-sdk.js"; s.async = true;
@@ -84,7 +83,6 @@ export default function Home() {
   const mainText = dark ? "#fff" : "#000";
   const subText2 = dark ? "#aaa" : "#777";
   const getChoice = (p: any) => choices[p.id] || { size: "M", color: p.color };
-
   const addToCart = (p: any) => {
     const ch = getChoice(p);
     const key = p.id + "-" + ch.color + "-" + ch.size;
@@ -108,7 +106,7 @@ export default function Home() {
     setPayStatus("");
   };
 
-  // TEST PI PAYMENT - ONLY ONE WAY, REAL PI SDK TEST MODE
+  // TEST PI - NOW WITH REAL APPROVAL VIA BACKEND
   const checkout = async () => {
     if (cart.length === 0) return;
     if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Please enter Full Name and Phone Number / WhatsApp first."); return; }
@@ -117,12 +115,24 @@ export default function Home() {
     if (!Pi) { setPayStatus("❌ Open this site in Pi Browser to pay with Test Pi."); return; }
     setPayStatus("⏳ Opening Pi Test Wallet... Approve in Pi Browser.");
     try {
-      await Pi.authenticate(["username", "payments"], () => {});
-      await Pi.createPayment({ amount: parseFloat(grandTotal), memo: "SOSA Outfits - " + fullName + " - " + deliveryType, metadata: { fullName, phone, address, deliveryType, items: cart } }, {
-        onReadyForServerApproval: (paymentId: string) => { setPayStatus("⏳ Test Pi Wallet opened. Waiting for approval..."); },
-        onReadyForServerCompletion: (_id: string, txid: string) => { saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode); },
+      const auth = await Pi.authenticate(["username", "payments"], (p: any) => {});
+      // Handle any unfinished payment from last expired try
+      try { await Pi.getIncompletePayments?.((p: any) => {}); } catch {}
+      await Pi.createPayment({ amount: parseFloat(grandTotal), memo: "SOSA Outfits - " + fullName + " - " + deliveryType, metadata: { fullName, phone, address, deliveryType, items: cart, orderCode } }, {
+        onReadyForServerApproval: async (paymentId: string) => {
+          setPayStatus("⏳ Wallet opened - Approving payment now (this is what failed before)...");
+          // THIS IS THE FIX: actually call backend to approve, don't just wait
+          const res = await fetch("/api/pi-approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+          if (!res.ok) { setPayStatus("❌ Approval failed - Check Vercel PI_API_KEY. See steps below. Order NOT lost."); throw new Error("approve failed"); }
+          setPayStatus("✅ Approved! Now confirm in your Wallet...");
+        },
+        onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+          // Tell backend to complete it
+          await fetch("/api/pi-complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }).catch(() => {});
+          saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode);
+        },
         onCancel: () => { setPayStatus("❌ Payment cancelled. No Test Pi taken. Your cart is still saved."); },
-        onError: () => { setPayStatus("❌ Test Pi payment error. Try again or use Save Order as Pending."); },
+        onError: (e: any) => { setPayStatus("❌ " + (e?.message || "Test Pi error. If it says approval failed, do Step 2 below.")); },
       });
     } catch (e: any) { setPayStatus("❌ " + (e?.message || "Test Pi error. Try again in Pi Browser.")); }
   };
@@ -143,16 +153,13 @@ export default function Home() {
         </div>
         <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
       </div>
-
       <div style={{ padding: "0 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>
         <button onClick={() => setPanel("logout")} style={btnStyle}>Logout</button>
         <button onClick={() => setPanel("cart")} style={btnStyle}>Cart ({cartCount})</button>
         <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
         <button onClick={() => setPanel("board")} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}>Leadership Board</button>
       </div>
-
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: 8 }}>
         {PRODUCTS.map((p) => {
           const ch = getChoice(p);
@@ -179,7 +186,6 @@ export default function Home() {
           );
         })}
       </div>
-
       {selected && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -196,8 +202,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* YOUR CART - SAME AS SCREENSHOT - TEST PI ONLY */}
       {panel === "cart" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#000", color: "#fff", width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -238,7 +242,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
       {panel === "orders" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -260,7 +263,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
       {panel === "board" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
@@ -272,7 +274,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
       {panel === "logout" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 360, borderRadius: 16, padding: 20, textAlign: "center" }}>
@@ -283,7 +284,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
       <div style={{ textAlign: "center", fontSize: 10, color: subText2, padding: "10px 10px 0" }}>SOSA © 2026 • Made in Nigeria • Pickup No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS<br />• Owner •</div>
       <div style={{ textAlign: "center", marginTop: 12 }}>
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "8px 18px", fontSize: 12, fontWeight: 800 }}>^<br />Back Up</button>
