@@ -1,10 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 
-declare global {
-  interface Window { Pi: any }
-}
-
 const post = (url: string, body: object) =>
   fetch(url, {
     method: "POST",
@@ -17,9 +13,10 @@ export default function PayButton({ amount, memo }: { amount: number; memo: stri
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!window.Pi) return setStatus("Pi SDK not loaded: open in Pi Browser");
-    window.Pi.init({ version: "2.0", sandbox: true });
-    window.Pi.authenticate(["username", "payments"], (p: any) =>
+    const Pi = (window as any).Pi;
+    if (!Pi) return setStatus("Pi SDK not loaded: open in Pi Browser");
+    Pi.init({ version: "2.0", sandbox: true });
+    Pi.authenticate(["username", "payments"], (p: any) =>
       post("/api/pi/incomplete", { paymentId: p.identifier, txid: p.transaction?.txid })
     )
       .then(() => setReady(true))
@@ -27,8 +24,9 @@ export default function PayButton({ amount, memo }: { amount: number; memo: stri
   }, []);
 
   const pay = () => {
+    const Pi = (window as any).Pi;
     setStatus("creating payment...");
-    window.Pi.createPayment(
+    Pi.createPayment(
       { amount, memo, metadata: { orderId: "sosa-" + Date.now() } },
       {
         onReadyForServerApproval: async (paymentId: string) => {
