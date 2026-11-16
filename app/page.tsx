@@ -42,18 +42,12 @@ function SosaLogo() {
   );
 }
 
-// BARCODE - THE WAY IT WAS - FOR PICKUP SCANNING
 function Barcode({ code }: { code: string }) {
-  const bars = code.split("").map((ch, i) => {
-    const w = (ch.charCodeAt(0) % 4) + 1;
-    return { w, black: i % 2 === 0 };
-  });
+  const bars = code.split("").map((ch, i) => ({ w: (ch.charCodeAt(0) % 4) + 1, black: i % 2 === 0 }));
   return (
     <div style={{ background: "#fff", borderRadius: 8, padding: "10px 12px 8px", marginTop: 10 }}>
       <div style={{ display: "flex", alignItems: "flex-end", height: 48, gap: 2, justifyContent: "center" }}>
-        {bars.map((b, i) => (
-          <div key={i} style={{ width: b.w, height: b.black ? 48 : 48, background: b.black ? "#000" : "#fff", borderRight: b.black ? "none" : "1px solid #eee" }} />
-        ))}
+        {bars.map((b, i) => (<div key={i} style={{ width: b.w, height: 48, background: b.black ? "#000" : "#fff" }} />))}
         <div style={{ width: 3, height: 48, background: "#000" }} />
         <div style={{ width: 1, height: 48, background: "#000" }} />
         <div style={{ width: 2, height: 48, background: "#000" }} />
@@ -71,19 +65,18 @@ export default function Home() {
   const [dark, setDark] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
   const [payStatus, setPayStatus] = useState<string>("");
-  const [piReady, setPiReady] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [deliveryType, setDeliveryType] = useState("delivery");
   const [choices, setChoices] = useState<any>({});
-  const [showTestPay, setShowTestPay] = useState(false);
   const [orderCode] = useState(() => "SOSA-" + Math.floor(100000 + Math.random() * 900000));
 
+  // TEST PI ONLY - NO MAINNET
   useEffect(() => {
     const s = document.createElement("script");
     s.src = "https://sdk.minepi.com/pi-sdk.js"; s.async = true;
-    s.onload = () => { try { (window as any).Pi.init({ version: "2.0", sandbox: true }); setPiReady(true); } catch {} };
+    s.onload = () => { try { (window as any).Pi.init({ version: "2.0", sandbox: true }); } catch {} };
     document.body.appendChild(s);
   }, []);
 
@@ -106,46 +99,32 @@ export default function Home() {
   const subtotal = cart.reduce((s, c) => s + parseFloat(c.price) * c.qty, 0);
   const deliveryFee = deliveryType === "delivery" ? 0.0001 : 0;
   const grandTotal = (subtotal + deliveryFee).toFixed(4);
-  const cartCode = orderCode;
 
   const saveOrder = (status: string, txid?: string, code?: string) => {
-    const newOrder = { id: Date.now(), code: code || cartCode, items: [...cart], total: grandTotal, subtotal: subtotal.toFixed(4), deliveryFee, deliveryType, fullName, phone, address, date: new Date().toLocaleString(), txid: txid || "", status };
+    const newOrder = { id: Date.now(), code: code || orderCode, items: [...cart], total: grandTotal, subtotal: subtotal.toFixed(4), deliveryFee, deliveryType, fullName, phone, address, date: new Date().toLocaleString(), txid: txid || "", status };
     setOrders([newOrder, ...orders]);
     setCart([]);
     setPanel("orders");
     setPayStatus("");
-    setShowTestPay(false);
   };
 
-  const checkDetails = () => {
-    if (cart.length === 0) return false;
-    if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Please enter Full Name and Phone Number / WhatsApp first."); return false; }
-    if (deliveryType === "delivery" && !address.trim()) { setPayStatus("❌ Please enter Delivery Address."); return false; }
-    return true;
-  };
-
-  // FUNCTIONING PI TEST PAYMENT - SANDBOX, NO EXPIRY, NO BACKEND NEEDED
-  const payTest = () => {
-    if (!checkDetails()) return;
-    setPayStatus("");
-    setShowTestPay(true);
-  };
-
-  // REAL PI PAYMENT - TRIES REAL WALLET (needs backend, may expire)
-  const payReal = async () => {
-    if (!checkDetails()) return;
+  // TEST PI PAYMENT - ONLY ONE WAY, REAL PI SDK TEST MODE
+  const checkout = async () => {
+    if (cart.length === 0) return;
+    if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Please enter Full Name and Phone Number / WhatsApp first."); return; }
+    if (deliveryType === "delivery" && !address.trim()) { setPayStatus("❌ Please enter Delivery Address."); return; }
     const Pi = (window as any).Pi;
-    if (!Pi) { setPayStatus("❌ No Pi Wallet found. Open in Pi Browser. Use TEST payment to test."); return; }
-    setPayStatus("⏳ Connecting to REAL Pi wallet... If it expires, use TEST payment - it always works.");
+    if (!Pi) { setPayStatus("❌ Open this site in Pi Browser to pay with Test Pi."); return; }
+    setPayStatus("⏳ Opening Pi Test Wallet... Approve in Pi Browser.");
     try {
       await Pi.authenticate(["username", "payments"], () => {});
       await Pi.createPayment({ amount: parseFloat(grandTotal), memo: "SOSA Outfits - " + fullName + " - " + deliveryType, metadata: { fullName, phone, address, deliveryType, items: cart } }, {
-        onReadyForServerApproval: () => { setPayStatus("⏳ Real Pi Wallet opened. Waiting for server approval... Real Pi needs backend, so it may expire. Use TEST payment if it expires."); },
-        onReadyForServerCompletion: (_id: string, txid: string) => { saveOrder("✅ PAID - Pi Payment Confirmed", txid); },
-        onCancel: () => { setPayStatus("❌ Payment cancelled. No Pi taken."); },
-        onError: () => { setPayStatus("❌ Real Pi expired (needs backend). Use TEST payment - it works. Or Save as Pending."); },
+        onReadyForServerApproval: (paymentId: string) => { setPayStatus("⏳ Test Pi Wallet opened. Waiting for approval..."); },
+        onReadyForServerCompletion: (_id: string, txid: string) => { saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode); },
+        onCancel: () => { setPayStatus("❌ Payment cancelled. No Test Pi taken. Your cart is still saved."); },
+        onError: () => { setPayStatus("❌ Test Pi payment error. Try again or use Save Order as Pending."); },
       });
-    } catch (e: any) { setPayStatus("❌ " + (e?.message || "Pi error. Use TEST payment.")); }
+    } catch (e: any) { setPayStatus("❌ " + (e?.message || "Test Pi error. Try again in Pi Browser.")); }
   };
 
   const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
@@ -159,7 +138,7 @@ export default function Home() {
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
-            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Pi SDK Ready @chijo09 | 0.0 pts | 18 Products {piReady ? "• Pi Test Connected 🟢" : "• Loading Pi..."}</p>
+            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi @chijo09 | 0.0 pts | 18 Products</p>
           </div>
         </div>
         <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
@@ -218,11 +197,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* YOUR CART - SAME AS SCREENSHOT + BARCODE + TEST PAYMENT */}
+      {/* YOUR CART - SAME AS SCREENSHOT - TEST PI ONLY */}
       {panel === "cart" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div style={{ background: "#000", color: "#fff", width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
-            <button onClick={() => { setPanel(null); setPayStatus(""); setShowTestPay(false); }} style={{ background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 700 }}>← Back to Shop</button>
+            <button onClick={() => { setPanel(null); setPayStatus(""); }} style={{ background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 700 }}>← Back to Shop</button>
             <h2 style={{ margin: "14px 0", fontSize: 26 }}>Your Cart</h2>
             {payStatus && <div style={{ background: "#fff3cd", color: "#000", borderRadius: 8, padding: 10, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>{payStatus}</div>}
             {cart.length === 0 && <p style={{ fontSize: 13, color: "#ccc" }}>Your cart is empty. Tap Add to Cart on any product.</p>}
@@ -240,7 +219,6 @@ export default function Home() {
               </div>
             ))}
             <p style={{ fontSize: 16, fontWeight: 800, margin: "10px 0" }}>Total: {subtotal.toFixed(2)} Pi</p>
-
             <h3 style={{ fontSize: 18, margin: "16px 0 6px" }}>--- CHECKOUT DETAILS ---</h3>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name *" style={inputStyle} />
             <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number / WhatsApp *" style={inputStyle} />
@@ -253,34 +231,10 @@ export default function Home() {
             {deliveryType === "delivery" && <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Delivery Address - House No, Street, Area, City, State *" rows={2} style={{ ...inputStyle, resize: "vertical" as any }} />}
             {deliveryType === "pickup" && <p style={{ fontSize: 12, color: "#ccc", marginTop: 10 }}>Pickup at No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS. No address needed.</p>}
             <p style={{ fontSize: 15, fontWeight: 800, margin: "14px 0" }}>Grand Total: {grandTotal} Pi {deliveryType === "delivery" ? "(incl. delivery - 1-2 days Lagos, 4-7 days outside Lagos)" : "(pickup - free)"}</p>
-
-            {/* BARCODE - THE WAY IT WAS */}
-            {cart.length > 0 && <Barcode code={cartCode} />}
-
-            {/* FUNCTIONING PI TEST PAYMENT */}
-            {cart.length > 0 && !showTestPay && (
-              <>
-                <button onClick={payTest} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 12 }}>Pay with Pi - {grandTotal} Pi</button>
-                <p style={{ fontSize: 11, color: "#ccc", textAlign: "center", margin: "6px 0 0" }}>Test Payment - works now, no expiry. Tap to open Test Wallet.</p>
-                <button onClick={payReal} style={{ width: "100%", background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Pay with Pi REAL (Mainnet)</button>
-              </>
-            )}
-
-            {/* TEST WALLET POPUP - WORKS */}
-            {showTestPay && (
-              <div style={{ background: "#fff", color: "#000", borderRadius: 12, padding: 14, marginTop: 12 }}>
-                <h3 style={{ margin: "0 0 6px", textAlign: "center" }}>🟣 Pi Test Wallet</h3>
-                <p style={{ fontSize: 12, textAlign: "center", color: "#555", margin: 0 }}>Test Payment - No real Pi will move</p>
-                <p style={{ fontSize: 13, textAlign: "center" }}><b>{fullName}</b> • {deliveryType === "pickup" ? "Self Pickup (Free)" : "Delivery"}</p>
-                <p style={{ fontSize: 16, fontWeight: 900, textAlign: "center", color: "#b45309" }}>Pay: {grandTotal} Pi</p>
-                <Barcode code={cartCode} />
-                <button onClick={() => saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", "TEST-TX-" + cartCode, cartCode)} style={{ width: "100%", background: "#7b2ff7", color: "#fff", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 10 }}>✅ Confirm Test Payment - {grandTotal} Pi</button>
-                <button onClick={() => setShowTestPay(false)} style={{ width: "100%", background: "#eee", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Cancel Test Payment</button>
-              </div>
-            )}
-
-            {cart.length > 0 && <button onClick={() => { if (!checkDetails()) return; saveOrder("⏳ PENDING - Pay on Pickup / WhatsApp", "", cartCode); }} style={{ width: "100%", background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Save Order as Pending (Pay Later)</button>}
-            <button onClick={() => { setPanel(null); setPayStatus(""); setShowTestPay(false); }} style={{ width: "100%", background: "transparent", color: "#fff", border: 0, padding: "10px 0", fontWeight: 700 }}>← Back to Shop</button>
+            {cart.length > 0 && <Barcode code={orderCode} />}
+            {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 12 }}>Pay with Pi - {grandTotal} Pi</button>}
+            {cart.length > 0 && <button onClick={() => { if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Enter Full Name + Phone first."); return; } saveOrder("⏳ PENDING - Pay on Pickup / WhatsApp", "", orderCode); }} style={{ width: "100%", background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Save Order as Pending (Pay Later)</button>}
+            <button onClick={() => { setPanel(null); setPayStatus(""); }} style={{ width: "100%", background: "transparent", color: "#fff", border: 0, padding: "10px 0", fontWeight: 700 }}>← Back to Shop</button>
           </div>
         </div>
       )}
