@@ -122,13 +122,13 @@ export default function Home() {
         onReadyForServerApproval: async (paymentId: string) => {
           setPayStatus("⏳ Wallet opened - Approving payment now (this is what failed before)...");
           // THIS IS THE FIX: actually call backend to approve, don't just wait
-          const res = await fetch("/api/pi-approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+          const res = await fetch("/api/pi/approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
           if (!res.ok) { setPayStatus("❌ Approval failed - Check Vercel PI_API_KEY. See steps below. Order NOT lost."); throw new Error("approve failed"); }
           setPayStatus("✅ Approved! Now confirm in your Wallet...");
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
           // Tell backend to complete it
-          await fetch("/api/pi-complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }).catch(() => {});
+          await fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }).catch(() => {});
           saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode);
         },
         onCancel: () => { setPayStatus("❌ Payment cancelled. No Test Pi taken. Your cart is still saved."); },
