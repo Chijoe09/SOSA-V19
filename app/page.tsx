@@ -61,6 +61,10 @@ function Barcode({ code }: { code: string }) {
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  // Leadership points: 1 Pi = 10 pts, only paid orders count
+const myPoints = orders
+  .filter((o) => o.status && o.status.includes("PAID"))
+  .reduce((sum, o) => sum + parseFloat(o.total || "0"), 0) * 10;
   const [selected, setSelected] = useState<any>(null);
   const [dark, setDark] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
@@ -148,7 +152,7 @@ export default function Home() {
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
-            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi @chijo09 | 0.0 pts | 18 Products</p>
+            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi @chijo09 | {myPoints.toFixed(1)} pts | 18 Products</p>
           </div>
         </div>
         <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
@@ -268,7 +272,7 @@ export default function Home() {
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
             <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
             <h2 style={{ margin: "10px 0 4px" }}>🏆 Leadership Board</h2>
-            {[ { name: "@chijo09 (You)", pts: "0.0 pts", rank: "1" }, { name: "@sosa_fan1", pts: "12.5 pts", rank: "2" }, { name: "@lagos_queen", pts: "8.0 pts", rank: "3" }, { name: "@owambe_star", pts: "5.5 pts", rank: "4" } ].map((u) => (
+            {[ { name: "@chijo09 (You)", pts: myPoints.toFixed(1) + " pts", rank: "1" }, { name: "@sosa_fan1", pts: "12.5 pts", rank: "2" }, { name: "@lagos_queen", pts: "8.0 pts", rank: "3" }, { name: "@owambe_star", pts: "5.5 pts", rank: "4" } ].map((u) => (
               <div key={u.rank} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #eee", padding: "10px 0" }}><span style={{ fontWeight: 800, fontSize: 13 }}>#{u.rank} {u.name}</span><span style={{ color: "#b45309", fontWeight: 800 }}>{u.pts}</span></div>
             ))}
           </div>
