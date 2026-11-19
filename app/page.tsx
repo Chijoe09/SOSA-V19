@@ -231,7 +231,7 @@ const myPoints = orders
             <p style={{ fontSize: 16, fontWeight: 800, margin: "10px 0" }}>Total: {subtotal.toFixed(2)} Pi</p>
             <h3 style={{ fontSize: 18, margin: "16px 0 6px" }}>--- CHECKOUT DETAILS ---</h3>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name *" style={inputStyle} />
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number / WhatsApp *" style={inputStyle} />
+            <input type="tel" inputMode="tel" autoComplete="tel" pattern="[0-9+ ]*" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number / WhatsApp *" style={inputStyle} />
             <p style={{ fontSize: 13, lineHeight: 1.6, margin: "14px 0 0" }}>🏪 Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>
             <p style={{ fontSize: 13, lineHeight: 1.6, margin: "6px 0 10px" }}>🚚 Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</p>
             <div style={{ display: "flex", gap: 8 }}>
