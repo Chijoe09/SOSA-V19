@@ -24,6 +24,19 @@ const PRODUCTS = [
 
 const SIZES = ["S", "M", "L", "XL", "XXL"];
 
+// Per-Pi-user storage keys (so buyers on the same phone never see each other's data)
+const SESSION_KEY = "sosa_session_user";
+const ordersKey = (u: string) => "orders_@" + u;
+const pointsKey = (u: string) => "points_@" + u;
+const readOrders = (u: string): any[] => {
+  try {
+    const raw = localStorage.getItem(ordersKey(u));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+};
+const newOrderCode = () => "SOSA-" + Math.floor(100000 + Math.random() * 900000);
+
 function SosaLogo() {
   return (
     <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -76,7 +89,10 @@ const myPoints = orders
   const [address, setAddress] = useState("");
   const [deliveryType, setDeliveryType] = useState("delivery");
   const [choices, setChoices] = useState<any>({});
-  const [orderCode] = useState(() => "SOSA-" + Math.floor(100000 + Math.random() * 900000));
+  const [orderCode, setOrderCode] = useState(() => newOrderCode());
+  const [user, setUser] = useState<string | null>(null); // Pi username of the logged-in buyer
+  const [ready, setReady] = useState(false);
+  const [loginMsg, setLoginMsg] = useState("");
 
   useEffect(() => {
     const s = document.createElement("script");
@@ -84,6 +100,52 @@ const myPoints = orders
     s.onload = () => { try { (window as any).Pi.init({ version: "2.0", sandbox: true }); } catch {} };
     document.body.appendChild(s);
   }, []);
+
+  // Restore saved Pi session (if any) and that user's own orders
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem(SESSION_KEY);
+      if (u) { setUser(u); setOrders(readOrders(u)); }
+    } catch {}
+    setReady(true);
+  }, []);
+
+  const startSession = (u: string) => {
+    try { localStorage.setItem(SESSION_KEY, u); } catch {}
+    setOrders(readOrders(u));
+    setUser(u);
+    setLoginMsg("");
+  };
+
+  // Full logout: clears session + everything in memory so the next buyer starts clean
+  const logout = (msg?: string) => {
+    try { localStorage.removeItem(SESSION_KEY); } catch {}
+    setUser(null);
+    setOrders([]);
+    setCart([]);
+    setFullName("");
+    setPhone("");
+    setAddress("");
+    setChoices({});
+    setSelected(null);
+    setPanel(null);
+    setPayStatus("");
+    setDeliveryType("delivery");
+    setOrderCode(newOrderCode());
+    setLoginMsg(msg || "");
+  };
+
+  const login = async () => {
+    const Pi = (window as any).Pi;
+    if (!Pi) { setLoginMsg("❌ Open this site in Pi Browser to login with Pi (or wait a second and tap again)."); return; }
+    setLoginMsg("⏳ Logging in with Pi...");
+    try {
+      const auth = await Pi.authenticate(["username", "payments"], (p: any) => {});
+      const u = auth?.user?.username;
+      if (!u) { setLoginMsg("❌ Could not read your Pi username. Try again."); return; }
+      startSession(u);
+    } catch (e: any) { setLoginMsg("❌ " + (e?.message || "Pi login failed. Try again in Pi Browser.")); }
+  };
 
   const bg = dark ? "#000" : "#f2f2f2";
   const mainText = dark ? "#fff" : "#000";
@@ -105,8 +167,15 @@ const myPoints = orders
   const grandTotal = (subtotal + deliveryFee).toFixed(4);
 
   const saveOrder = (status: string, txid?: string, code?: string) => {
-    const newOrder = { id: Date.now(), code: code || orderCode, items: [...cart], total: grandTotal, subtotal: subtotal.toFixed(4), deliveryFee, deliveryType, fullName, phone, address, date: new Date().toLocaleString(), txid: txid || "", status };
-    setOrders([newOrder, ...orders]);
+    if (!user) return; // never save an order without a logged-in Pi user
+    const newOrder = { id: Date.now(), code: code || orderCode, items: [...cart], total: grandTotal, subtotal: subtotal.toFixed(4), deliveryFee, deliveryType, fullName, phone, address, date: new Date().toLocaleString(), txid: txid || "", status, piUser: user };
+    const nextOrders = [newOrder, ...orders];
+    setOrders(nextOrders);
+    try {
+      localStorage.setItem(ordersKey(user), JSON.stringify(nextOrders));
+      const pts = nextOrders.filter((o) => o.status && o.status.includes("PAID")).reduce((sum, o) => sum + parseFloat(o.total || "0"), 0) * 10;
+      localStorage.setItem(pointsKey(user), pts.toFixed(1));
+    } catch {}
     setCart([]);
     setPanel("orders");
     setPayStatus("");
@@ -122,6 +191,12 @@ const myPoints = orders
     setPayStatus("⏳ Opening Pi Test Wallet... Approve in Pi Browser.");
     try {
       const auth = await Pi.authenticate(["username", "payments"], (p: any) => {});
+      // IDENTITY CHECK: the Pi account paying must be the logged-in shop user
+      const piUser = auth?.user?.username;
+      if (!piUser || piUser !== user) {
+        logout("❌ Pi account " + (piUser ? "@" + piUser : "(unknown)") + " does not match the logged-in shop user @" + user + ". No payment was made. Please login again as yourself.");
+        return;
+      }
       // Handle any unfinished payment from last expired try
       try { await Pi.getIncompletePayments?.((p: any) => {}); } catch {}
       await Pi.createPayment({ amount: parseFloat(grandTotal), memo: "SOSA Outfits - " + fullName + " - " + deliveryType, metadata: { fullName, phone, address, deliveryType, items: cart, orderCode } }, {
@@ -146,6 +221,23 @@ const myPoints = orders
   const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
   const inputStyle: any = { width: "100%", padding: "12px", borderRadius: 10, border: "none", fontSize: 14, boxSizing: "border-box" as any, marginTop: 8, background: "#fff", color: "#000" };
 
+  if (!ready) return <div style={{ background: bg, minHeight: "100vh" }} />;
+
+  if (!user) {
+    return (
+      <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        <div style={{ width: "100%", maxWidth: 360, textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center" }}><SosaLogo /></div>
+          <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: "12px 0 0", fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
+          <p style={{ fontSize: 14, margin: "4px 0 16px", fontWeight: 900 }}>SOSA Outfits</p>
+          <p style={{ fontSize: 13, color: subText2, margin: "0 0 14px" }}>Login with your own Pi account to shop. Orders and points are saved per Pi username.</p>
+          {loginMsg && <div style={{ background: "#fff3cd", color: "#000", borderRadius: 8, padding: 10, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>{loginMsg}</div>}
+          <button onClick={login} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, fontSize: 14 }}>Login with Pi</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -154,7 +246,8 @@ const myPoints = orders
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
-            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi @chijo09 | {myPoints.toFixed(1)} pts | 18 Products</p>
+            <p style={{ fontSize: 12, margin: "2px 0 0", fontWeight: 800, color: "#f5b301" }}>Logged in as @{user}</p>
+            <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi | {myPoints.toFixed(1)} pts | 18 Products</p>
           </div>
         </div>
         <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
@@ -230,6 +323,10 @@ const myPoints = orders
             ))}
             <p style={{ fontSize: 16, fontWeight: 800, margin: "10px 0" }}>Total: {subtotal.toFixed(2)} Pi</p>
             <h3 style={{ fontSize: 18, margin: "16px 0 6px" }}>--- CHECKOUT DETAILS ---</h3>
+            <div style={{ background: "#111", borderRadius: 10, padding: 10, marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 800 }}>Buying as @{user}</div>
+              <button onClick={() => logout()} style={{ marginTop: 6, background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 700 }}>Not you? Logout and Login as yourself</button>
+            </div>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name *" style={inputStyle} />
             <input type="tel" inputMode="tel" autoComplete="tel" pattern="[0-9+ ]*" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number / WhatsApp *" style={inputStyle} />
             <p style={{ fontSize: 13, lineHeight: 1.6, margin: "14px 0 0" }}>🏪 Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>
@@ -274,7 +371,7 @@ const myPoints = orders
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
             <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
             <h2 style={{ margin: "10px 0 4px" }}>🏆 Leadership Board</h2>
-            {[ { name: "@chijo09 (You)", pts: myPoints.toFixed(1) + " pts", rank: "1" }, { name: "@sosa_fan1", pts: "12.5 pts", rank: "2" }, { name: "@lagos_queen", pts: "8.0 pts", rank: "3" }, { name: "@owambe_star", pts: "5.5 pts", rank: "4" } ].map((u) => (
+            {[ { name: "@" + user + " (You)", pts: myPoints.toFixed(1) + " pts", rank: "1" }, { name: "@sosa_fan1", pts: "12.5 pts", rank: "2" }, { name: "@lagos_queen", pts: "8.0 pts", rank: "3" }, { name: "@owambe_star", pts: "5.5 pts", rank: "4" } ].map((u) => (
               <div key={u.rank} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #eee", padding: "10px 0" }}><span style={{ fontWeight: 800, fontSize: 13 }}>#{u.rank} {u.name}</span><span style={{ color: "#b45309", fontWeight: 800 }}>{u.pts}</span></div>
             ))}
           </div>
@@ -284,9 +381,9 @@ const myPoints = orders
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 360, borderRadius: 16, padding: 20, textAlign: "center" }}>
             <h2 style={{ margin: "0 0 8px" }}>Logout?</h2>
-            <p style={{ fontSize: 13, color: "#555" }}>You are logged in as @chijo09.</p>
+            <p style={{ fontSize: 13, color: "#555" }}>You are logged in as @{user}.</p>
             <button onClick={() => setPanel(null)} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 10 }}>Stay Logged In</button>
-            <button onClick={() => { alert("Logged out"); setPanel(null); }} style={{ width: "100%", background: "#eee", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Yes, Logout</button>
+            <button onClick={() => logout()} style={{ width: "100%", background: "#eee", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Yes, Logout</button>
           </div>
         </div>
       )}
