@@ -22,6 +22,8 @@ const PRODUCTS = [
   { id: 18, name: "Silver Bag", cat: "SOSA • BAG", price: "0.06 Pi", color: "Silver", desc: "Elegant silver bag for owambe, church & outing. Light, strong, premium finish." },
 ];
 
+const SIZES = ["S", "M", "L", "XL", "XXL"];
+
 function SosaLogo() {
   return (
     <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -180,7 +182,7 @@ const myPoints = orders
               <div style={{ fontSize: 11, fontWeight: 800, color: "#b45309" }}>{p.price} • {ch.color}</div>
               <div style={{ fontSize: 9, lineHeight: 1.3, color: "#555", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
               <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
-                <select value={ch.size} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, size: e.target.value } })} style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}><option>M</option><option>S</option><option>L</option><option>XL</option>option>XXL<option></select>
+                <select value={ch.size} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, size: e.target.value } })} style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}>{SIZES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
                 <select value={ch.color} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, color: e.target.value } })} style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}><option>Black</option><option>Red</option><option>Gold</option><option>Silver</option></select>
               </div>
               <button onClick={() => setSelected({ ...p, size: ch.size, color: ch.color })} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>👁 View</button>
