@@ -78,6 +78,93 @@ function Barcode({ code }: { code: string }) {
   );
 }
 
+// Home-page product slideshow: auto-slides every 3s, swipe, dots, pause on touch, tap = open that product
+function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice: (p: any) => any; onOpen: (p: any) => void }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const idxRef = useRef(0);
+  const pausedRef = useRef(false);
+  const resumeRef = useRef<any>(null);
+  const [active, setActive] = useState(0);
+
+  const goTo = (i: number, smooth = true) => {
+    const box = boxRef.current;
+    const slide = box ? (box.children[i] as HTMLElement | undefined) : undefined;
+    if (!box || !slide) return;
+    box.scrollTo({ left: slide.offsetLeft - (box.clientWidth - slide.clientWidth) / 2, behavior: smooth ? "smooth" : "auto" });
+  };
+  const goToRef = useRef(goTo);
+  goToRef.current = goTo;
+
+  const onScroll = () => {
+    const box = boxRef.current;
+    if (!box || box.children.length < 2) return;
+    const step = (box.children[1] as HTMLElement).offsetLeft - (box.children[0] as HTMLElement).offsetLeft;
+    if (step <= 0) return;
+    const i = Math.max(0, Math.min(products.length - 1, Math.round(box.scrollLeft / step)));
+    if (i !== idxRef.current) { idxRef.current = i; setActive(i); }
+  };
+
+  // touch/hold pauses auto-slide; resumes 3 seconds after release
+  const hold = () => { pausedRef.current = true; if (resumeRef.current) clearTimeout(resumeRef.current); };
+  const release = () => {
+    if (resumeRef.current) clearTimeout(resumeRef.current);
+    resumeRef.current = setTimeout(() => { pausedRef.current = false; }, 3000);
+  };
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (pausedRef.current) return;
+      const next = (idxRef.current + 1) % products.length;
+      goToRef.current(next, next !== 0);
+    }, 3000);
+    return () => { clearInterval(t); if (resumeRef.current) clearTimeout(resumeRef.current); };
+  }, [products.length]);
+
+  return (
+    <div style={{ margin: "10px 0 4px" }}>
+      <style>{".sosa-slides::-webkit-scrollbar{display:none}"}</style>
+      <div
+        ref={boxRef}
+        className="sosa-slides"
+        onScroll={onScroll}
+        onTouchStart={hold}
+        onTouchEnd={release}
+        onTouchCancel={release}
+        onMouseDown={hold}
+        onMouseUp={release}
+        onMouseLeave={release}
+        style={{ position: "relative", display: "flex", gap: 10, overflowX: "auto", padding: "0 14%", scrollSnapType: "x mandatory", scrollbarWidth: "none", overscrollBehaviorX: "contain" } as any}
+      >
+        {products.map((p) => {
+          const ch = getChoice(p);
+          return (
+            <div key={p.id} onClick={() => onOpen(p)} style={{ flex: "0 0 72%", scrollSnapAlign: "center", background: "#fff", color: "#000", borderRadius: 14, overflow: "hidden", cursor: "pointer" }}>
+              <div style={{ background: "#000", textAlign: "center", padding: "10px 6px", height: 150, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ color: "#f5b301", fontSize: 11, fontWeight: 700 }}>{p.cat}</div>
+                <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{p.name}</div>
+                <div style={{ color: "#aaa", fontSize: 11 }}>📷 Photo Coming Soon</div>
+              </div>
+              <div style={{ padding: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: "#555", margin: "2px 0" }}>{ch.color} / {ch.size}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#b45309" }}>{p.price}</div>
+                <div style={{ background: "#f5b301", color: "#000", borderRadius: 20, padding: "9px 0", fontSize: 12, fontWeight: 800, textAlign: "center", marginTop: 8 }}>View &amp; Add to Cart</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", marginTop: 6 }}>
+        {products.map((p, i) => (
+          <button key={p.id} aria-label={"Go to " + p.name} onClick={() => { hold(); goTo(i); release(); }} style={{ padding: 4, background: "transparent", border: 0 }}>
+            <span style={{ display: "block", width: 7, height: 7, borderRadius: "50%", background: i === active ? "#f5b301" : "#888" }} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -329,6 +416,7 @@ const myPoints = orders
         <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
         <button onClick={() => setPanel("board")} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}>Leadership Board</button>
       </div>
+      <Slideshow products={PRODUCTS} getChoice={getChoice} onOpen={(p: any) => { const ch = getChoice(p); setSelected({ ...p, size: ch.size, color: ch.color }); }} />
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: 8 }}>
         {PRODUCTS.map((p) => {
