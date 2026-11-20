@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const PRODUCTS = [
   { id: 1, name: "Classic Heel", cat: "SOSA • HEEL", price: "0.05 Pi", color: "Black", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria." },
@@ -93,6 +93,11 @@ const myPoints = orders
   const [user, setUser] = useState<string | null>(null); // Pi username of the logged-in buyer
   const [ready, setReady] = useState(false);
   const [loginMsg, setLoginMsg] = useState("");
+  // Stuck (incomplete) Pi payment found by Pi.authenticate
+  const [stuck, setStuck] = useState<{ id: string; amount: any; txid: string; done?: boolean } | null>(null);
+  const [stuckMsg, setStuckMsg] = useState("");
+  const [stuckBusy, setStuckBusy] = useState(false);
+  const stuckRef = useRef<any>(null);
 
   useEffect(() => {
     const s = document.createElement("script");
@@ -132,7 +137,43 @@ const myPoints = orders
     setPayStatus("");
     setDeliveryType("delivery");
     setOrderCode(newOrderCode());
+    setStuck(null);
+    setStuckMsg("");
+    stuckRef.current = null;
     setLoginMsg(msg || "");
+  };
+
+  // Pi calls this during authenticate() when an old payment was never completed/cancelled
+  const onIncompletePaymentFound = (payment: any) => {
+    const info = { id: payment?.identifier || "", amount: payment?.amount, txid: payment?.transaction?.txid || "" };
+    stuckRef.current = info;
+    setStuck(info);
+    setStuckMsg("");
+  };
+
+  const stuckAction = async (action: "complete" | "cancel") => {
+    if (!stuck || stuckBusy) return;
+    if (action === "complete" && !stuck.txid) {
+      setStuckMsg("❌ This payment has no blockchain transaction (txid), so it cannot be completed. Tap Cancel Stuck Payment instead.");
+      return;
+    }
+    setStuckBusy(true);
+    setStuckMsg(action === "complete" ? "⏳ Completing stuck payment..." : "⏳ Cancelling stuck payment...");
+    try {
+      const res = await fetch("/api/pi/" + action, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action === "complete" ? { paymentId: stuck.id, txid: stuck.txid } : { paymentId: stuck.id }) });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        setStuckMsg("❌ " + action + " failed (" + res.status + "). " + t.slice(0, 200));
+      } else {
+        stuckRef.current = null;
+        setStuck({ ...stuck, done: true });
+        setStuckMsg(action === "complete" ? "✅ Stuck payment completed. You can pay again now." : "✅ Stuck payment cancelled. You can pay again now.");
+        setPayStatus("");
+      }
+    } catch (e: any) {
+      setStuckMsg("❌ " + (e?.message || "Network error. Try again."));
+    }
+    setStuckBusy(false);
   };
 
   const login = async () => {
@@ -140,7 +181,7 @@ const myPoints = orders
     if (!Pi) { setLoginMsg("❌ Open this site in Pi Browser to login with Pi (or wait a second and tap again)."); return; }
     setLoginMsg("⏳ Logging in with Pi...");
     try {
-      const auth = await Pi.authenticate(["username", "payments"], (p: any) => {});
+      const auth = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
       const u = auth?.user?.username;
       if (!u) { setLoginMsg("❌ Could not read your Pi username. Try again."); return; }
       startSession(u);
@@ -190,13 +231,14 @@ const myPoints = orders
     if (!Pi) { setPayStatus("❌ Open this site in Pi Browser to pay with Test Pi."); return; }
     setPayStatus("⏳ Opening Pi Test Wallet... Approve in Pi Browser.");
     try {
-      const auth = await Pi.authenticate(["username", "payments"], (p: any) => {});
+      const auth = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
       // IDENTITY CHECK: the Pi account paying must be the logged-in shop user
       const piUser = auth?.user?.username;
       if (!piUser || piUser !== user) {
         logout("❌ Pi account " + (piUser ? "@" + piUser : "(unknown)") + " does not match the logged-in shop user @" + user + ". No payment was made. Please login again as yourself.");
         return;
       }
+      if (stuckRef.current) { setPayStatus("⚠️ A stuck payment was found. Tap Complete or Cancel in the box first, then tap Pay again."); return; }
       // Handle any unfinished payment from last expired try
       try { await Pi.getIncompletePayments?.((p: any) => {}); } catch {}
       await Pi.createPayment({ amount: parseFloat(grandTotal), memo: "SOSA Outfits - " + fullName + " - " + deliveryType, metadata: { fullName, phone, address, deliveryType, items: cart, orderCode } }, {
@@ -209,7 +251,8 @@ const myPoints = orders
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
           // Tell backend to complete it
-          await fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }).catch(() => {});
+          const done = await fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }).catch(() => null);
+          if (!done || !done.ok) { setPayStatus("⚠️ Payment sent but server completion failed (check PI_API_KEY in Vercel). Do NOT pay again - logout and login to Complete it."); return; }
           saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode);
         },
         onCancel: () => { setPayStatus("❌ Payment cancelled. No Test Pi taken. Your cart is still saved."); },
@@ -221,11 +264,26 @@ const myPoints = orders
   const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
   const inputStyle: any = { width: "100%", padding: "12px", borderRadius: 10, border: "none", fontSize: 14, boxSizing: "border-box" as any, marginTop: 8, background: "#fff", color: "#000" };
 
+  const stuckBox = stuck ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 380, borderRadius: 16, padding: 20 }}>
+        <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>⚠️ Pending Payment Found</h2>
+        <p style={{ fontSize: 13, margin: "6px 0", wordBreak: "break-all" }}><b>Stuck Payment ID:</b> {stuck.id}</p>
+        <p style={{ fontSize: 13, margin: "6px 0" }}><b>Stuck Amount:</b> {String(stuck.amount)} Pi</p>
+        {stuckMsg && <div style={{ background: "#fff3cd", color: "#000", borderRadius: 8, padding: 10, fontSize: 12, fontWeight: 700, margin: "10px 0" }}>{stuckMsg}</div>}
+        {!stuck.done && <button disabled={stuckBusy} onClick={() => stuckAction("complete")} style={{ width: "100%", background: "#00843d", color: "#fff", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Complete Stuck Payment</button>}
+        {!stuck.done && <button disabled={stuckBusy} onClick={() => stuckAction("cancel")} style={{ width: "100%", background: "#e53935", color: "#fff", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Cancel Stuck Payment</button>}
+        {stuck.done && <button onClick={() => { setStuck(null); setStuckMsg(""); }} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Close</button>}
+      </div>
+    </div>
+  ) : null;
+
   if (!ready) return <div style={{ background: bg, minHeight: "100vh" }} />;
 
   if (!user) {
     return (
       <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        {stuckBox}
         <div style={{ width: "100%", maxWidth: 360, textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><SosaLogo /></div>
           <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: "12px 0 0", fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
@@ -240,6 +298,7 @@ const myPoints = orders
 
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
+      {stuckBox}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
           <SosaLogo />
