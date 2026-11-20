@@ -398,8 +398,10 @@ const myPoints = orders
             {deliveryType === "pickup" && <p style={{ fontSize: 12, color: "#ccc", marginTop: 10 }}>Pickup at No.1 ODICHE STREET, COKER Aguda, ORILE, LAGOS. No address needed.</p>}
             <p style={{ fontSize: 15, fontWeight: 800, margin: "14px 0" }}>Grand Total: {grandTotal} Pi {deliveryType === "delivery" ? "(incl. delivery - 1-2 days Lagos, 4-7 days outside Lagos)" : "(pickup - free)"}</p>
             {cart.length > 0 && <Barcode code={orderCode} />}
+            {cart.length > 0 && <p style={{ fontSize: 13, fontWeight: 800, margin: "12px 0 0", lineHeight: 1.4 }}>Pay Now = Your goods are secured. Pay Later = Your list is only saved, goods are NOT reserved.</p>}
             {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 12 }}>Pay with Pi - {grandTotal} Pi</button>}
-            {cart.length > 0 && <button onClick={() => { if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Enter Full Name + Phone first."); return; } saveOrder("⏳ PENDING - Pay on Pickup / WhatsApp", "", orderCode); }} style={{ width: "100%", background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Save Order as Pending (Pay Later)</button>}
+            {cart.length > 0 && <button onClick={() => { if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Enter Full Name + Phone first."); return; } saveOrder("⏳ PENDING - Saved List Only, NOT Reserved - Pay on Pickup / WhatsApp", "", orderCode); }} style={{ width: "100%", background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Save List for Pickup - Pay When You Come (Not Reserved)</button>}
+            {cart.length > 0 && <div style={{ background: "#111", color: "#ccc", borderRadius: 8, padding: 8, fontSize: 11, lineHeight: 1.5, marginTop: 6 }}>What does this mean? This only saves your list. We have NOT booked or reserved your shoes. No payment has been taken. Your goods are NOT kept aside. First person to pay gets the goods. When you come to the shop, show your barcode SOSA-XXXXXX, then pay with Pi, transfer or cash, then collect your goods. If you don&apos;t come within 24 hours, this saved list will expire.</div>}
             <button onClick={() => { setPanel(null); setPayStatus(""); }} style={{ width: "100%", background: "transparent", color: "#fff", border: 0, padding: "10px 0", fontWeight: 700 }}>← Back to Shop</button>
           </div>
         </div>
@@ -418,6 +420,7 @@ const myPoints = orders
                 <div style={{ fontWeight: 800, fontSize: 13 }}>Grand Total: {o.total} Pi (Subtotal {o.subtotal} + Fee {o.deliveryFee})</div>
                 {o.items.map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} - {it.color} / {it.size} x {it.qty} - {it.price}</div>)}
                 <div style={{ fontSize: 12, color: "green", fontWeight: 700, marginTop: 4 }}>{o.status}</div>
+                {o.status && o.status.includes("PENDING") && <div style={{ fontSize: 11, color: "#555", background: "#fff3cd", borderRadius: 6, padding: 6, marginTop: 4, lineHeight: 1.4 }}>This order is NOT reserved. Your shoes are still available for other customers to buy. To secure your goods, pay now. To pay later, come to the shop with this barcode within 24 hours.</div>}
                 {o.txid && <div style={{ fontSize: 11, color: "#555", wordBreak: "break-all" }}>Tx: {o.txid}</div>}
                 <Barcode code={o.code} />
               </div>
