@@ -35,7 +35,12 @@ const readOrders = (u: string): any[] => {
     return Array.isArray(arr) ? arr : [];
   } catch { return []; }
 };
-const newOrderCode = () => "SOSA-" + Math.floor(100000 + Math.random() * 900000);
+// Unique barcode per order: SOSA-MMDD-HHMMSS-RRRR (date + time to the second + random 4 digits)
+const newOrderCode = () => {
+  const d = new Date();
+  const p = (n: number, len = 2) => String(n).padStart(len, "0");
+  return "SOSA-" + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + p(Math.floor(Math.random() * 10000), 4);
+};
 
 function SosaLogo() {
   return (
@@ -206,6 +211,13 @@ const myPoints = orders
   const subtotal = cart.reduce((s, c) => s + parseFloat(c.price) * c.qty, 0);
   const deliveryFee = deliveryType === "delivery" ? 0.0001 : 0;
   const grandTotal = (subtotal + deliveryFee).toFixed(4);
+
+  // Every time a new order is started (cart goes from empty to filled) it gets a brand new barcode
+  const prevCartCount = useRef(0);
+  useEffect(() => {
+    if (cartCount > 0 && prevCartCount.current === 0) setOrderCode(newOrderCode());
+    prevCartCount.current = cartCount;
+  }, [cartCount]);
 
   const saveOrder = (status: string, txid?: string, code?: string) => {
     if (!user) return; // never save an order without a logged-in Pi user
