@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 // ===== SOSA SETTINGS - change links here, in one easy place =====
 // CHANGE SOSA WHATSAPP HERE
 const SOSA_WHATSAPP = "https://wa.me/2348087259800";
-// CHANGE SOSA MAP HERE
-const SOSA_MAP = "https://maps.google.com/?q=No+1+ODICHE+STREET+COKER+Aguda+ORILE+LAGOS";
+// CHANGE SOSA MAP HERE - WORKING URL - DO NOT USE maps.app.goo.gl - IT IS DEAD - USE kgmid LINK BELOW
+const SOSA_MAP = "https://www.google.com/search?kgmid=/g/11jk936v31&q=Sophisticated%20Samples%20Merchandise%20Limited";
 // CHANGE SOSA SOCIAL LINKS HERE (use "#" until the real link is ready)
 const SOSA_SOCIAL = [
   { name: "Instagram", url: "#" },
@@ -238,6 +238,8 @@ const myPoints = orders
   const [trackCode, setTrackCode] = useState("");
   const [trackResult, setTrackResult] = useState<any>(null);
   const [copyMsg, setCopyMsg] = useState("");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
 
   useEffect(() => {
     try {
@@ -511,6 +513,25 @@ const myPoints = orders
     );
   }
 
+  // Search + category filter (used by slideshow AND grid)
+  const catWords: any = { Heel: "heel", Flat: "flat", "Palm Slide": "slide", Bag: "bag" };
+  const q = search.trim().toLowerCase();
+  const visibleProducts = PRODUCTS.filter((p) => {
+    const catOk = category === "All" || (p.name + " " + p.cat).toLowerCase().includes(catWords[category]);
+    const hay = (p.name + " " + p.cat + " " + p.color + " " + p.desc).toLowerCase();
+    return catOk && (!q || hay.includes(q));
+  });
+
+  // Leadership Board: sort by points HIGH to LOW, rank = position after sorting
+  const boardAll: any[] = [
+    { name: "@" + user, pts: myPoints, you: true },
+    { name: "@sosa_fan1", pts: 12.5, you: false },
+    { name: "@lagos_queen", pts: 8.0, you: false },
+    { name: "@owambe_star", pts: 5.5, you: false },
+  ].sort((a, b) => b.pts - a.pts);
+  const boardTop = boardAll.slice(0, 4);
+  const myBoardIdx = boardAll.findIndex((u) => u.you);
+
   const mItem: any = { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: "#111", color: "#fff", border: 0, borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 700, marginTop: 8, textDecoration: "none", boxSizing: "border-box" };
   const mSub: any = { display: "block", fontSize: 11, fontWeight: 400, color: "#aaa", marginTop: 2 };
 
@@ -518,9 +539,11 @@ const myPoints = orders
     <div style={{ position: "fixed", inset: 0, zIndex: 70, pointerEvents: menuOpen ? "auto" : "none", visibility: menuOpen ? "visible" : "hidden", transition: menuOpen ? "none" : "visibility 0s linear 0.25s" }}>
       <div onClick={closeMenu} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", opacity: menuOpen ? 1 : 0, transition: "opacity 0.25s" }} />
       <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "85%", maxWidth: 380, background: "#000", color: "#fff", overflowY: "auto", padding: 16, boxSizing: "border-box", borderRight: "2px solid #f5b301", transform: menuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }}>
-        <button onClick={closeMenu} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "8px 14px", fontSize: 13, fontWeight: 800 }}>&lt; Back to Shop</button>
-        <p style={{ fontSize: 14, fontWeight: 800, color: "#f5b301", margin: "14px 0 0" }}>Logged in as @{user}</p>
-        <button onClick={closeMenu} style={{ ...mItem, justifyContent: "center", background: "#fff", color: "#000" }}>View Profile</button>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 14, flexShrink: 0, marginBottom: 6 }}>
+          <button onClick={closeMenu} style={{ alignSelf: "flex-start", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "8px 14px", fontSize: 13, fontWeight: 800 }}>&lt; Back to Shop</button>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#f5b301", lineHeight: 1.4, wordBreak: "break-word", padding: "2px 0" }}>Logged in as @{user}</div>
+          <button onClick={closeMenu} style={{ ...mItem, marginTop: 0, justifyContent: "center", background: "#fff", color: "#000" }}>View Profile</button>
+        </div>
 
         <button onClick={menuOpenBoard} style={mItem}><span>🏆 Leadership Board</span></button>
         <button onClick={() => menuOpenPopup("track")} style={mItem}><span>📦 Track Order</span></button>
@@ -569,6 +592,7 @@ const myPoints = orders
         <p style={{ margin: "0 0 8px" }}>Welcome To SOPHISTICATED SAMPLES, SOSA-outfits - Luxury street general wears, shoes, hand bags, jeans, shirts, natives wears, shopping.</p>
         <p style={{ margin: "0 0 8px" }}>Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>
         <p style={{ margin: 0 }}>Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</p>
+        <p style={{ margin: "10px 0 0" }}><a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" style={{ color: "#b45309", fontWeight: 800 }}>📍 Sosa Map - Get Directions</a></p>
       </div>
     ));
   } else if (popup === "terms") {
@@ -656,13 +680,20 @@ const myPoints = orders
       </div>
       <div style={{ padding: "0 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>
         <button onClick={() => setPanel("logout")} style={btnStyle}>Logout</button>
-        <button onClick={() => setPanel("cart")} style={btnStyle}>Cart ({cartCount})</button>
+        <button onClick={() => setPanel("cart")} style={{ ...btnStyle, display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ position: "relative", display: "inline-block", fontSize: 16, lineHeight: 1, marginRight: 6 }}>🛒<span style={{ position: "absolute", top: -7, right: -9, minWidth: 15, height: 15, borderRadius: 8, background: "#e53935", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", boxSizing: "border-box", lineHeight: 1 }}>{cartCount}</span></span>Cart - {subtotal.toFixed(2)} Pi</button>
         <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
       </div>
-      <Slideshow products={PRODUCTS} getChoice={getChoice} onOpen={(p: any) => { const ch = getChoice(p); setSelected({ ...p, size: ch.size, color: ch.color }); }} />
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." style={{ display: "block", width: "calc(100% - 16px)", boxSizing: "border-box", margin: "8px 8px 0", height: 34, padding: "0 12px", borderRadius: 20, border: "none", fontSize: 13, background: "#fff", color: "#000" }} />
+      <div style={{ display: "flex", gap: 6, padding: "6px 8px 0", overflowX: "auto" }}>
+        {["All", "Heel", "Flat", "Palm Slide", "Bag"].map((c) => (
+          <button key={c} onClick={() => setCategory(c)} style={{ flexShrink: 0, border: 0, borderRadius: 20, padding: "4px 11px", fontSize: 11, fontWeight: 700, background: category === c ? "#f5b301" : (dark ? "#222" : "#ddd"), color: category === c ? "#000" : mainText }}>{c}</button>
+        ))}
+      </div>
+      {visibleProducts.length === 0 && <p style={{ padding: "12px 12px 0", fontSize: 13, fontWeight: 700 }}>{'No products found for "' + search.trim() + '"'}</p>}
+      {visibleProducts.length > 0 && <div key={visibleProducts.map((p) => p.id).join(",")}><Slideshow products={visibleProducts} getChoice={getChoice} onOpen={(p: any) => { const ch = getChoice(p); setSelected({ ...p, size: ch.size, color: ch.color }); }} /></div>}
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6, padding: 8 }}>
-        {PRODUCTS.map((p) => {
+        {visibleProducts.map((p) => {
           const ch = getChoice(p);
           return (
           <div key={p.id} style={cardBox}>
@@ -778,9 +809,13 @@ const myPoints = orders
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
             <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
             <h2 style={{ margin: "10px 0 4px" }}>🏆 Leadership Board</h2>
-            {[ { name: "@" + user + " (You)", pts: myPoints.toFixed(1) + " pts", rank: "1" }, { name: "@sosa_fan1", pts: "12.5 pts", rank: "2" }, { name: "@lagos_queen", pts: "8.0 pts", rank: "3" }, { name: "@owambe_star", pts: "5.5 pts", rank: "4" } ].map((u) => (
-              <div key={u.rank} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #eee", padding: "10px 0" }}><span style={{ fontWeight: 800, fontSize: 13 }}>#{u.rank} {u.name}</span><span style={{ color: "#b45309", fontWeight: 800 }}>{u.pts}</span></div>
+            {boardTop.map((u, i) => (
+              <div key={u.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", padding: "10px 6px", background: u.you ? "#ffe066" : "transparent", borderRadius: u.you ? 8 : 0 }}>
+                <span style={{ fontWeight: 800, fontSize: 13 }}>#{i + 1} {u.name}{u.you ? <span style={{ marginLeft: 6, background: "#000", color: "#f5b301", borderRadius: 10, padding: "1px 7px", fontSize: 10 }}>(You)</span> : null}</span>
+                <span style={{ color: "#b45309", fontWeight: 800 }}>{u.pts.toFixed(1)} pts</span>
+              </div>
             ))}
+            {myBoardIdx >= 4 && <div style={{ marginTop: 10, background: "#ffe066", borderRadius: 8, padding: "10px 6px", fontWeight: 800, fontSize: 13 }}>Your Rank: #{myBoardIdx + 1} - {myPoints.toFixed(1)} pts</div>}
           </div>
         </div>
       )}
