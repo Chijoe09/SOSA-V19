@@ -1,6 +1,22 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
+// ===== SOSA SETTINGS - change links here, in one easy place =====
+// CHANGE SOSA WHATSAPP HERE
+const SOSA_WHATSAPP = "https://wa.me/2348087259800";
+// CHANGE SOSA MAP HERE
+const SOSA_MAP = "https://maps.google.com/?q=No+1+ODICHE+STREET+COKER+Aguda+ORILE+LAGOS";
+// CHANGE SOSA SOCIAL LINKS HERE (use "#" until the real link is ready)
+const SOSA_SOCIAL = [
+  { name: "Instagram", url: "#" },
+  { name: "Facebook", url: "#" },
+  { name: "X (Twitter)", url: "#" },
+  { name: "TikTok", url: "#" },
+  { name: "Telegram", url: "#" },
+];
+const SOSA_APP_URL = "https://sossa-v19.vercel.app";
+const SOSA_EMAIL = "sophisticatedsamples@gmail.com";
+
 const PRODUCTS = [
   { id: 1, name: "Classic Heel", cat: "SOSA • HEEL", price: "0.05 Pi", color: "Black", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria." },
   { id: 2, name: "Royal Heel", cat: "SOSA • HEEL", price: "0.04 Pi", color: "Black", desc: "Royal look, soft inner pad. Perfect for owambe & special occasions." },
@@ -211,6 +227,24 @@ const myPoints = orders
   const [stuckMsg, setStuckMsg] = useState("");
   const [stuckBusy, setStuckBusy] = useState(false);
   const stuckRef = useRef<any>(null);
+  // Side menu + popups
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [popup, setPopup] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<any>({}); // saved in this browser only: { username: {stars, comment, date} }
+  const [rateStars, setRateStars] = useState(0);
+  const [rateComment, setRateComment] = useState("");
+  const [rateMsg, setRateMsg] = useState("");
+  const [trackPhone, setTrackPhone] = useState("");
+  const [trackCode, setTrackCode] = useState("");
+  const [trackResult, setTrackResult] = useState<any>(null);
+  const [copyMsg, setCopyMsg] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sosa_ratings");
+      if (raw) { const r = JSON.parse(raw); if (r && typeof r === "object") setRatings(r); }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const s = document.createElement("script");
@@ -253,7 +287,68 @@ const myPoints = orders
     setStuck(null);
     setStuckMsg("");
     stuckRef.current = null;
+    setMenuOpen(false);
+    setPopup(null);
+    setTrackPhone("");
+    setTrackCode("");
+    setTrackResult(null);
     setLoginMsg(msg || "");
+  };
+
+  // ===== Side menu + popups =====
+  const closeMenu = () => setMenuOpen(false);
+  const menuOpenBoard = () => { setMenuOpen(false); setPanel("board"); };
+  const menuOpenPopup = (name: string) => {
+    setMenuOpen(false);
+    if (name === "rate") { setRateStars(0); setRateComment(""); setRateMsg(""); }
+    if (name === "track") { setTrackPhone(""); setTrackCode(""); setTrackResult(null); }
+    if (name === "share") setCopyMsg("");
+    setPopup(name);
+  };
+  const shareApp = async () => {
+    setMenuOpen(false);
+    const nav: any = navigator;
+    if (nav.share) {
+      try { await nav.share({ title: "SOSA Outfits", text: "SOSA Outfits - Sophisticated Samples", url: SOSA_APP_URL }); } catch {}
+      return;
+    }
+    setCopyMsg("");
+    setPopup("share");
+  };
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(SOSA_APP_URL); setCopyMsg("✅ Link copied"); }
+    catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = SOSA_APP_URL; document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+        setCopyMsg("✅ Link copied");
+      } catch { setCopyMsg("❌ Could not copy. Link: " + SOSA_APP_URL); }
+    }
+  };
+  const ratingList = Object.values(ratings) as any[];
+  const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
+  const myRating = user ? ratings[user] : null;
+  const submitRating = () => {
+    if (!user) return;
+    if (!rateStars) { setRateMsg("Please tap a star (1 to 5)."); return; }
+    const next = { ...ratings, [user]: { stars: rateStars, comment: rateComment.trim(), date: new Date().toLocaleString() } };
+    setRatings(next);
+    try { localStorage.setItem("sosa_ratings", JSON.stringify(next)); } catch {}
+    setRateMsg("");
+  };
+  // Track Order: looks in this login's saved orders (same orders as My Orders). Phone + code must both match.
+  const doTrack = () => {
+    const digits = (v: string) => v.replace(/\D/g, "");
+    const ph = digits(trackPhone).slice(-10);
+    const code = trackCode.trim().toUpperCase();
+    if (ph.length < 7 || !code) { setTrackResult("need"); return; }
+    const found = orders.find((o) => String(o.code || "").toUpperCase() === code && digits(o.phone || "").slice(-10) === ph);
+    setTrackResult(found || "none");
+  };
+  const shareOrderWA = (o: any) => {
+    const text = "SOSA Outfits Order " + o.code + " - Total " + o.total + " Pi. Show this barcode at pickup - SOSA Outfits. " + SOSA_APP_URL;
+    window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
   };
 
   // Pi calls this during authenticate() when an old payment was never completed/cancelled
@@ -416,16 +511,144 @@ const myPoints = orders
     );
   }
 
+  const mItem: any = { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: "#111", color: "#fff", border: 0, borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 700, marginTop: 8, textDecoration: "none", boxSizing: "border-box" };
+  const mSub: any = { display: "block", fontSize: 11, fontWeight: 400, color: "#aaa", marginTop: 2 };
+
+  const menuUI = (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, pointerEvents: menuOpen ? "auto" : "none", visibility: menuOpen ? "visible" : "hidden", transition: menuOpen ? "none" : "visibility 0s linear 0.25s" }}>
+      <div onClick={closeMenu} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", opacity: menuOpen ? 1 : 0, transition: "opacity 0.25s" }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "85%", maxWidth: 380, background: "#000", color: "#fff", overflowY: "auto", padding: 16, boxSizing: "border-box", borderRight: "2px solid #f5b301", transform: menuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }}>
+        <button onClick={closeMenu} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "8px 14px", fontSize: 13, fontWeight: 800 }}>&lt; Back to Shop</button>
+        <p style={{ fontSize: 14, fontWeight: 800, color: "#f5b301", margin: "14px 0 0" }}>Logged in as @{user}</p>
+        <button onClick={closeMenu} style={{ ...mItem, justifyContent: "center", background: "#fff", color: "#000" }}>View Profile</button>
+
+        <button onClick={menuOpenBoard} style={mItem}><span>🏆 Leadership Board</span></button>
+        <button onClick={() => menuOpenPopup("track")} style={mItem}><span>📦 Track Order</span></button>
+        <button onClick={() => menuOpenPopup("rate")} style={mItem}><span>⭐ Rate Us{ratingAvg ? <span style={mSub}>Average ★ {ratingAvg}</span> : null}</span></button>
+        <button onClick={shareApp} style={mItem}><span>🔗 Share App</span></button>
+        <a href={SOSA_WHATSAPP} target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>💬 WhatsApp Us</span></a>
+        <a href={"mailto:" + SOSA_EMAIL} onClick={closeMenu} style={mItem}><span>✉️ Email Us<span style={mSub}>{SOSA_EMAIL}</span></span></a>
+        <a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>📍 Sosa Map<span style={mSub}>No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS. - Get Directions</span></span></a>
+        <a href="https://mapofpi.com" target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>🌍 Map Of Pi<span style={mSub}>sosa.pi/outfits</span></span></a>
+
+        <h3 style={{ fontSize: 15, margin: "18px 0 0", color: "#f5b301" }}>Follow Us</h3>
+        {SOSA_SOCIAL.map((sc) => (
+          <a key={sc.name} href={sc.url} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (sc.url === "#") e.preventDefault(); else closeMenu(); }} style={mItem}>
+            <span>{sc.name}</span><span style={{ fontSize: 11, fontWeight: 400, color: "#aaa" }}>{sc.url === "#" ? "Coming Soon" : "Open"}</span>
+          </a>
+        ))}
+
+        <button onClick={() => menuOpenPopup("about")} style={{ ...mItem, marginTop: 18 }}><span>About SOSA</span></button>
+        <button onClick={() => menuOpenPopup("terms")} style={mItem}><span>Terms</span></button>
+        <button onClick={() => menuOpenPopup("privacy")} style={mItem}><span>Privacy</span></button>
+
+        <div style={{ marginTop: 18, fontSize: 10, color: "#aaa", lineHeight: 1.7, textAlign: "center", paddingBottom: 16 }}>
+          SOPHISTICATED SAMPLES MERCHANDISE · BN 2229053 · CRBN 177764 · sosa.pi v19<br />
+          <a href="https://sosa.pi/outfits" target="_blank" rel="noopener noreferrer" style={{ color: "#f5b301" }}>sosa.pi/outfits</a><br />
+          <a href={SOSA_APP_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#f5b301", wordBreak: "break-all" }}>{SOSA_APP_URL}</a>
+        </div>
+      </div>
+    </div>
+  );
+
+  const popupBox = (title: string, body: any) => (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 75, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 380, maxHeight: "88vh", overflowY: "auto", borderRadius: 16, padding: 18, boxSizing: "border-box" }}>
+        <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>{title}</h2>
+        {body}
+        <button onClick={() => setPopup(null)} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 12 }}>Close</button>
+      </div>
+    </div>
+  );
+  const linkBtn: any = { display: "block", textAlign: "center", textDecoration: "none", background: "#000", color: "#fff", borderRadius: 20, padding: "10px 0", fontWeight: 800, fontSize: 13, marginTop: 8 };
+
+  let popupUI: any = null;
+  if (popup === "about") {
+    popupUI = popupBox("About SOSA", (
+      <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+        <p style={{ margin: "0 0 8px" }}>Welcome To SOPHISTICATED SAMPLES, SOSA-outfits - Luxury street general wears, shoes, hand bags, jeans, shirts, natives wears, shopping.</p>
+        <p style={{ margin: "0 0 8px" }}>Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>
+        <p style={{ margin: 0 }}>Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</p>
+      </div>
+    ));
+  } else if (popup === "terms") {
+    popupUI = popupBox("Terms", <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>SOSA Outfits Terms - Payment is in Pi. Goods are reserved only after Pi Payment is confirmed. Saved List orders are NOT reserved.</p>);
+  } else if (popup === "privacy") {
+    popupUI = popupBox("Privacy", <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>SOSA Outfits Privacy - We only use your name, phone, and order to deliver your goods. We do not share your data.</p>);
+  } else if (popup === "share") {
+    const enc = encodeURIComponent(SOSA_APP_URL);
+    popupUI = popupBox("Share App", (
+      <div>
+        <p style={{ fontSize: 12, color: "#555", margin: "0 0 4px", wordBreak: "break-all" }}>{SOSA_APP_URL}</p>
+        <a href={"https://wa.me/?text=" + encodeURIComponent("SOSA Outfits - Sophisticated Samples " + SOSA_APP_URL)} target="_blank" rel="noopener noreferrer" style={linkBtn}>WhatsApp</a>
+        <a href={"https://www.facebook.com/sharer/sharer.php?u=" + enc} target="_blank" rel="noopener noreferrer" style={linkBtn}>Facebook</a>
+        <a href={"https://twitter.com/intent/tweet?url=" + enc + "&text=" + encodeURIComponent("SOSA Outfits - Sophisticated Samples")} target="_blank" rel="noopener noreferrer" style={linkBtn}>X</a>
+        <button onClick={copyLink} style={{ ...linkBtn, width: "100%", border: 0, background: "#f5b301", color: "#000" }}>Copy Link</button>
+        {copyMsg && <p style={{ fontSize: 12, fontWeight: 700, margin: "8px 0 0", wordBreak: "break-all" }}>{copyMsg}</p>}
+      </div>
+    ));
+  } else if (popup === "rate") {
+    popupUI = popupBox("⭐ Rate Us", myRating ? (
+      <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+        <p style={{ margin: 0, fontWeight: 800 }}>Thanks, you rated {myRating.stars} stars</p>
+        {myRating.comment ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#555" }}>{myRating.comment}</p> : null}
+      </div>
+    ) : (
+      <div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} aria-label={n + " star"} onClick={() => setRateStars(n)} style={{ background: "transparent", border: 0, fontSize: 30, padding: 2, color: n <= rateStars ? "#f5b301" : "#ccc" }}>★</button>
+          ))}
+        </div>
+        <textarea value={rateComment} onChange={(e) => setRateComment(e.target.value)} placeholder="Write a comment (optional)" rows={3} style={{ width: "100%", boxSizing: "border-box", padding: 10, borderRadius: 10, border: "1px solid #ccc", fontSize: 14, marginTop: 8 }} />
+        {rateMsg && <p style={{ fontSize: 12, color: "#b00020", fontWeight: 700, margin: "6px 0 0" }}>{rateMsg}</p>}
+        <button onClick={submitRating} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Submit</button>
+      </div>
+    ));
+  } else if (popup === "track") {
+    const t = trackResult;
+    popupUI = popupBox("📦 Track Order", (
+      <div>
+        <p style={{ fontSize: 12, color: "#555", margin: "0 0 4px" }}>Enter Phone + Order Code / Barcode (e.g. SOSA-...)</p>
+        <input type="tel" inputMode="tel" autoComplete="tel" pattern="[0-9+ ]*" value={trackPhone} onChange={(e) => setTrackPhone(e.target.value)} placeholder="Phone Number used at checkout" style={{ ...inputStyle, border: "1px solid #ccc" }} />
+        <input value={trackCode} onChange={(e) => setTrackCode(e.target.value)} placeholder="Order Code / Barcode e.g. SOSA-1120-203015-7391" style={{ ...inputStyle, border: "1px solid #ccc" }} />
+        <button onClick={doTrack} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Track</button>
+        {t === "need" && <p style={{ fontSize: 12, color: "#b00020", fontWeight: 700 }}>Please enter your phone number and the order code.</p>}
+        {t === "none" && <p style={{ fontSize: 12, color: "#b00020", fontWeight: 700 }}>No order found on this phone for that phone number and code. Check the barcode and the phone you used at checkout.</p>}
+        {t && typeof t === "object" && (
+          <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 10, marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: "#777" }}>{t.date}</div>
+            <div style={{ fontSize: 13, fontWeight: 800 }}>Order {t.code}</div>
+            {(t.items || []).map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} - {it.color} / {it.size} x {it.qty} - {it.price}</div>)}
+            <div style={{ fontSize: 13, fontWeight: 800, marginTop: 4 }}>Total: {t.total} Pi</div>
+            <div style={{ fontSize: 12 }}><b>Delivery Type:</b> {t.deliveryType === "pickup" ? "Self Pickup (Free)" : "Delivery"}</div>
+            <div style={{ fontSize: 12 }}><b>Address:</b> {t.deliveryType === "delivery" ? t.address : "No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS."}</div>
+            <div style={{ fontSize: 12, color: "green", fontWeight: 700 }}><b style={{ color: "#000" }}>Current Status:</b> {t.status}</div>
+            <div style={{ fontSize: 12 }}><b>Estimated:</b> {t.deliveryType === "delivery" ? "1-2 days Lagos, 4-7 days outside Lagos" : "Ready for pickup after payment is confirmed"}</div>
+            <div style={{ fontSize: 10, color: "#777", marginTop: 2 }}>Order stages: Pending, Preparing, Shipped, Delivered, Picked Up, Pay on Pickup</div>
+            <Barcode code={t.code} />
+            <button onClick={() => shareOrderWA(t)} style={{ width: "100%", background: "#25D366", color: "#000", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Share Order to WhatsApp</button>
+          </div>
+        )}
+      </div>
+    ));
+  }
+
   return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
       {stuckBox}
+      {menuUI}
+      {popupUI}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <SosaLogo />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+            <button onClick={() => setMenuOpen(true)} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11, fontWeight: 800 }}>☰ Menu</button>
+            <SosaLogo />
+          </div>
           <div>
             <h1 style={{ fontSize: 22, lineHeight: 1.1, margin: 0, fontWeight: 900 }}>SOPHISTICATED<br />SAMPLES</h1>
             <p style={{ fontSize: 14, margin: "4px 0 0", fontWeight: 900, color: mainText }}>SOSA Outfits</p>
-            <p style={{ fontSize: 12, margin: "2px 0 0", fontWeight: 800, color: "#f5b301" }}>Logged in as @{user}</p>
+            <p style={{ fontSize: 12, margin: "2px 0 0", fontWeight: 800, color: "#f5b301" }}>Logged in as @{user}{ratingAvg ? <span style={{ marginLeft: 8 }}>★ {ratingAvg}</span> : null}</p>
             <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi | {myPoints.toFixed(1)} pts | 18 Products</p>
           </div>
         </div>
@@ -435,7 +658,6 @@ const myPoints = orders
         <button onClick={() => setPanel("logout")} style={btnStyle}>Logout</button>
         <button onClick={() => setPanel("cart")} style={btnStyle}>Cart ({cartCount})</button>
         <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
-        <button onClick={() => setPanel("board")} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}>Leadership Board</button>
       </div>
       <Slideshow products={PRODUCTS} getChoice={getChoice} onOpen={(p: any) => { const ch = getChoice(p); setSelected({ ...p, size: ch.size, color: ch.color }); }} />
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
