@@ -78,6 +78,17 @@ function Barcode({ code }: { code: string }) {
   );
 }
 
+// Shared compact card sizes - used by BOTH the grid and the slideshow so they always match
+const CARD_MIN_H = 166;
+const cardBox: any = { background: "#fff", color: "#000", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: CARD_MIN_H };
+const imgBox: any = { background: "#000", textAlign: "center", padding: "3px 2px", height: 30, display: "flex", flexDirection: "column", justifyContent: "center" };
+const bodyBox: any = { padding: 4, display: "flex", flexDirection: "column", gap: 3, flex: 1 };
+const nameSt: any = { fontSize: 10, fontWeight: 800, lineHeight: 1.15, minHeight: 23, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+const priceSt: any = { fontSize: 10, fontWeight: 800, color: "#b45309", lineHeight: 1.2 };
+const descSt: any = { fontSize: 8, lineHeight: 1.25, height: 20, color: "#555", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+const selSt: any = { flex: 1, minWidth: 0, height: 22, fontSize: 9, padding: 1, border: "1px solid #ddd", borderRadius: 5 };
+const cardBtn: any = { flex: 1, minWidth: 0, height: 36, border: 0, borderRadius: 6, fontSize: 9, fontWeight: 700, lineHeight: 1.15, padding: 0 };
+
 // Home-page product slideshow: auto-slides every 3s, swipe, dots, pause on touch, tap = open that product
 function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice: (p: any) => any; onOpen: (p: any) => void }) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -86,9 +97,11 @@ function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice
   const resumeRef = useRef<any>(null);
   const [active, setActive] = useState(0);
 
+  const slidesOf = () => (boxRef.current ? Array.from(boxRef.current.querySelectorAll("[data-slide]")) as HTMLElement[] : []);
+
   const goTo = (i: number, smooth = true) => {
     const box = boxRef.current;
-    const slide = box ? (box.children[i] as HTMLElement | undefined) : undefined;
+    const slide = slidesOf()[i];
     if (!box || !slide) return;
     box.scrollTo({ left: slide.offsetLeft - (box.clientWidth - slide.clientWidth) / 2, behavior: smooth ? "smooth" : "auto" });
   };
@@ -97,8 +110,9 @@ function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice
 
   const onScroll = () => {
     const box = boxRef.current;
-    if (!box || box.children.length < 2) return;
-    const step = (box.children[1] as HTMLElement).offsetLeft - (box.children[0] as HTMLElement).offsetLeft;
+    const slides = slidesOf();
+    if (!box || slides.length < 2) return;
+    const step = slides[1].offsetLeft - slides[0].offsetLeft;
     if (step <= 0) return;
     const i = Math.max(0, Math.min(products.length - 1, Math.round(box.scrollLeft / step)));
     if (i !== idxRef.current) { idxRef.current = i; setActive(i); }
@@ -120,8 +134,11 @@ function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice
     return () => { clearInterval(t); if (resumeRef.current) clearTimeout(resumeRef.current); };
   }, [products.length]);
 
+  // Slide width = (container - 2 gaps) / 3 = exactly one grid column. Spacers let the first/last slide centre.
+  const spacer = <div aria-hidden="true" style={{ flex: "0 0 calc(33.333% - 4px)" }} />;
+
   return (
-    <div style={{ margin: "10px 0 4px" }}>
+    <div style={{ margin: "6px 8px 0" }}>
       <style>{".sosa-slides::-webkit-scrollbar{display:none}"}</style>
       <div
         ref={boxRef}
@@ -133,31 +150,35 @@ function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice
         onMouseDown={hold}
         onMouseUp={release}
         onMouseLeave={release}
-        style={{ position: "relative", display: "flex", gap: 10, overflowX: "auto", padding: "0 14%", scrollSnapType: "x mandatory", scrollbarWidth: "none", overscrollBehaviorX: "contain" } as any}
+        style={{ position: "relative", display: "flex", gap: 6, overflowX: "auto", scrollSnapType: "x mandatory", scrollbarWidth: "none", overscrollBehaviorX: "contain" } as any}
       >
-        {products.map((p) => {
+        {spacer}
+        {products.map((p, i) => {
           const ch = getChoice(p);
           return (
-            <div key={p.id} onClick={() => onOpen(p)} style={{ flex: "0 0 72%", scrollSnapAlign: "center", background: "#fff", color: "#000", borderRadius: 14, overflow: "hidden", cursor: "pointer" }}>
-              <div style={{ background: "#000", textAlign: "center", padding: "10px 6px", height: 150, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <div style={{ color: "#f5b301", fontSize: 11, fontWeight: 700 }}>{p.cat}</div>
-                <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{p.name}</div>
-                <div style={{ color: "#aaa", fontSize: 11 }}>📷 Photo Coming Soon</div>
+            <div key={p.id} data-slide="1" onClick={() => onOpen(p)} style={{ ...cardBox, flex: "0 0 calc((100% - 12px) / 3)", scrollSnapAlign: "center", cursor: "pointer", opacity: i === active ? 1 : 0.8 }}>
+              <div style={imgBox}>
+                <div style={{ color: "#f5b301", fontSize: 7.5, fontWeight: 700, lineHeight: 1.2 }}>{p.cat}</div>
+                <div style={{ color: "#aaa", fontSize: 7.5, lineHeight: 1.2 }}>📷 Photo Coming Soon</div>
               </div>
-              <div style={{ padding: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>{p.name}</div>
-                <div style={{ fontSize: 12, color: "#555", margin: "2px 0" }}>{ch.color} / {ch.size}</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#b45309" }}>{p.price}</div>
-                <div style={{ background: "#f5b301", color: "#000", borderRadius: 20, padding: "9px 0", fontSize: 12, fontWeight: 800, textAlign: "center", marginTop: 8 }}>View &amp; Add to Cart</div>
+              <div style={bodyBox}>
+                <div style={nameSt}>{p.name}</div>
+                <div style={priceSt}>{p.price} • {ch.color}</div>
+                <div style={descSt}>{p.desc}</div>
+                <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+                  <div style={{ height: 22, border: "1px solid #ddd", borderRadius: 5, fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>{ch.color} / {ch.size}</div>
+                  <div style={{ ...cardBtn, flex: "none", background: "#f5b301", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>View &amp; Add to Cart</div>
+                </div>
               </div>
             </div>
           );
         })}
+        {spacer}
       </div>
-      <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", marginTop: 6 }}>
+      <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", marginTop: 2 }}>
         {products.map((p, i) => (
-          <button key={p.id} aria-label={"Go to " + p.name} onClick={() => { hold(); goTo(i); release(); }} style={{ padding: 4, background: "transparent", border: 0 }}>
-            <span style={{ display: "block", width: 7, height: 7, borderRadius: "50%", background: i === active ? "#f5b301" : "#888" }} />
+          <button key={p.id} aria-label={"Go to " + p.name} onClick={() => { hold(); goTo(i); release(); }} style={{ padding: "3px 4px", background: "transparent", border: 0 }}>
+            <span style={{ display: "block", width: 6, height: 6, borderRadius: "50%", background: i === active ? "#f5b301" : "#888" }} />
           </button>
         ))}
       </div>
@@ -418,27 +439,29 @@ const myPoints = orders
       </div>
       <Slideshow products={PRODUCTS} getChoice={getChoice} onOpen={(p: any) => { const ch = getChoice(p); setSelected({ ...p, size: ch.size, color: ch.color }); }} />
       <p style={{ padding: "0 12px", fontSize: 12 }}>👇 Tap any product TO SEE details before you buy. 18 Products - Grid View</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6, padding: 8 }}>
         {PRODUCTS.map((p) => {
           const ch = getChoice(p);
           return (
-          <div key={p.id} style={{ background: "#fff", color: "#000", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ background: "#000", textAlign: "center", padding: "8px 4px", height: 70, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ color: "#f5b301", fontSize: 8, fontWeight: 700 }}>{p.cat}</div>
-              <div style={{ color: "#fff", fontSize: 11, fontWeight: 800, lineHeight: 1.2 }}>{p.name}</div>
-              <div style={{ color: "#aaa", fontSize: 8 }}>📷 Photo Coming Soon</div>
-              <div style={{ background: "#fff", color: "#000", fontSize: 8, borderRadius: 20, padding: "2px 6px", margin: "4px auto 0", display: "inline-block" }}>{ch.color}</div>
+          <div key={p.id} style={cardBox}>
+            <div style={imgBox}>
+              <div style={{ color: "#f5b301", fontSize: 7.5, fontWeight: 700, lineHeight: 1.2 }}>{p.cat}</div>
+              <div style={{ color: "#aaa", fontSize: 7.5, lineHeight: 1.2 }}>📷 Photo Coming Soon</div>
             </div>
-            <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, lineHeight: 1.2 }}>{p.name}</div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#b45309" }}>{p.price} • {ch.color}</div>
-              <div style={{ fontSize: 9, lineHeight: 1.3, color: "#555", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
-              <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
-                <select value={ch.size} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, size: e.target.value } })} style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}>{SIZES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-                <select value={ch.color} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, color: e.target.value } })} style={{ flex: 1, fontSize: 9, padding: 3, border: "1px solid #ddd", borderRadius: 5 }}><option>Black</option><option>Red</option><option>Gold</option><option>Silver</option></select>
+            <div style={bodyBox}>
+              <div style={nameSt}>{p.name}</div>
+              <div style={priceSt}>{p.price} • {ch.color}</div>
+              <div style={descSt}>{p.desc}</div>
+              <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ display: "flex", gap: 3 }}>
+                  <select value={ch.size} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, size: e.target.value } })} style={selSt}>{SIZES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+                  <select value={ch.color} onChange={(e) => setChoices({ ...choices, [p.id]: { ...ch, color: e.target.value } })} style={selSt}><option>Black</option><option>Red</option><option>Gold</option><option>Silver</option></select>
+                </div>
+                <div style={{ display: "flex", gap: 3 }}>
+                  <button onClick={() => setSelected({ ...p, size: ch.size, color: ch.color })} style={{ ...cardBtn, background: "#000", color: "#fff" }}>👁 View</button>
+                  <button onClick={() => addToCart(p)} style={{ ...cardBtn, background: "#f5b301", color: "#000" }}>Add to Cart</button>
+                </div>
               </div>
-              <button onClick={() => setSelected({ ...p, size: ch.size, color: ch.color })} style={{ width: "100%", background: "#000", color: "#fff", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>👁 View</button>
-              <button onClick={() => addToCart(p)} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 6, padding: "6px 0", fontSize: 10, fontWeight: 700 }}>Add to Cart</button>
             </div>
           </div>
           );
