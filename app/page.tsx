@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from "react";
 // ===== SOSA SETTINGS - change links here, in one easy place =====
 // CHANGE SOSA WHATSAPP HERE
 const SOSA_WHATSAPP = "https://wa.me/2348087259800";
-// CHANGE SOSA MAP HERE - WORKING URL - DO NOT USE maps.app.goo.gl - IT IS DEAD - USE kgmid LINK BELOW
-const SOSA_MAP = "https://www.google.com/search?kgmid=/g/11jk936v31&q=Sophisticated%20Samples%20Merchandise%20Limited";
+// CHANGE SOSA MAP HERE - USE MAPS API LINK ONLY - DO NOT USE kgmid OR goo.gl
+const SOSA_MAP = "https://www.google.com/maps/search/?api=1&query=Sophisticated%20Samples%20Merchandise%20Limited%2C%201%20Odiche%20Street%2C%20Coker%2C%20Lagos%20101241";
+// CHANGE MAP OF PI LINK HERE
+const SOSA_MAP_OF_PI = "https://mapofpi.com/";
 // CHANGE SOSA SOCIAL LINKS HERE (use "#" until the real link is ready)
 const SOSA_SOCIAL = [
   { name: "Instagram", url: "#" },
@@ -16,6 +18,28 @@ const SOSA_SOCIAL = [
 ];
 const SOSA_APP_URL = "https://sossa-v19.vercel.app";
 const SOSA_EMAIL = "sophisticatedsamples@gmail.com";
+
+// Inside Pi Browser, open external links in the phone's own browser/Maps app (skips Pi Browser's wrapper page).
+// Outside Pi Browser (or if that fails) the normal new-tab link is used.
+const openExternal = (e: any, url: string) => {
+  try {
+    const Pi = (window as any).Pi;
+    if (/PiBrowser/i.test(navigator.userAgent) && Pi && typeof Pi.openUrlInSystemBrowser === "function") {
+      e.preventDefault();
+      try {
+        const r = Pi.openUrlInSystemBrowser(url);
+        if (r && r.catch) r.catch(() => window.open(url, "_blank"));
+      } catch { window.open(url, "_blank"); }
+    }
+  } catch {}
+};
+
+// Wakes the Vercel API routes before a payment starts (empty request, answered immediately).
+// A cold server is the likely reason the first payment attempt expired.
+const warmPiServer = async () => {
+  const post = (u: string) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => null);
+  await Promise.race([Promise.all([post("/api/pi/approve"), post("/api/pi/complete")]), new Promise((r) => setTimeout(r, 4000))]);
+};
 
 const PRODUCTS = [
   { id: 1, name: "Classic Heel", cat: "SOSA • HEEL", price: "0.05 Pi", color: "Black", desc: "Elegant classic heel for church, wedding & office. Comfortable sole, made in Nigeria." },
@@ -240,6 +264,17 @@ const myPoints = orders
   const [copyMsg, setCopyMsg] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  // Pay with Pi guard: blocks double taps while a payment is being prepared/paid
+  const [paying, setPaying] = useState(false);
+  const payingRef = useRef(false);
+  const payTimerRef = useRef<any>(null);
+  const piReadyRef = useRef(false);
+  const endPaying = () => {
+    payingRef.current = false;
+    setPaying(false);
+    if (payTimerRef.current) { clearTimeout(payTimerRef.current); payTimerRef.current = null; }
+  };
+  useEffect(() => { if (panel === "cart") warmPiServer(); }, [panel]);
 
   useEffect(() => {
     try {
@@ -251,7 +286,7 @@ const myPoints = orders
   useEffect(() => {
     const s = document.createElement("script");
     s.src = "https://sdk.minepi.com/pi-sdk.js"; s.async = true;
-    s.onload = () => { try { (window as any).Pi.init({ version: "2.0", sandbox: true }); } catch {} };
+    s.onload = () => { try { (window as any).Pi.init({ version: "2.0", sandbox: true }); piReadyRef.current = true; } catch {} };
     document.body.appendChild(s);
   }, []);
 
@@ -289,6 +324,7 @@ const myPoints = orders
     setStuck(null);
     setStuckMsg("");
     stuckRef.current = null;
+    endPaying();
     setMenuOpen(false);
     setPopup(null);
     setTrackPhone("");
@@ -339,14 +375,23 @@ const myPoints = orders
     try { localStorage.setItem("sosa_ratings", JSON.stringify(next)); } catch {}
     setRateMsg("");
   };
-  // Track Order: looks in this login's saved orders (same orders as My Orders). Phone + code must both match.
+  // Track Order: searches the SAME order list that My Orders shows. Formatting of code/phone is ignored.
+  const normCode = (v: string) => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^SOSA/, "");
+  const normPhone = (v: string) => {
+    let d = String(v || "").replace(/\D/g, "");
+    if (d.startsWith("234")) d = d.slice(3);
+    if (d.startsWith("0")) d = d.slice(1);
+    return d;
+  };
   const doTrack = () => {
-    const digits = (v: string) => v.replace(/\D/g, "");
-    const ph = digits(trackPhone).slice(-10);
-    const code = trackCode.trim().toUpperCase();
+    const ph = normPhone(trackPhone);
+    const code = normCode(trackCode);
     if (ph.length < 7 || !code) { setTrackResult("need"); return; }
-    const found = orders.find((o) => String(o.code || "").toUpperCase() === code && digits(o.phone || "").slice(-10) === ph);
-    setTrackResult(found || "none");
+    const sameCode = orders.filter((o) => normCode(o.code) === code);
+    const found = sameCode.find((o) => normPhone(o.phone) === ph);
+    if (found) { setTrackResult(found); return; }
+    const hint = sameCode.length ? "That order code exists, but the phone number on it is different. The phone on that order ends with " + String(sameCode[0].phone || "").replace(/\D/g, "").slice(-4) + "." : "";
+    setTrackResult({ error: "none", phone: trackPhone, code: trackCode, hint }); // form is NOT cleared
   };
   const shareOrderWA = (o: any) => {
     const text = "SOSA Outfits Order " + o.code + " - Total " + o.total + " Pi. Show this barcode at pickup - SOSA Outfits. " + SOSA_APP_URL;
@@ -439,23 +484,41 @@ const myPoints = orders
     setPayStatus("");
   };
 
+  // Waits (max ~10s) until the Pi SDK is loaded AND initialised, so the payment is created only once, when ready
+  const waitForPi = async () => {
+    for (let i = 0; i < 40; i++) {
+      if ((window as any).Pi && piReadyRef.current) return true;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return false;
+  };
+  const EXPIRED_MSG = "⚠️ Payment expired, tap Pay Pi again to retry. Your cart, name and phone are still saved.";
+
   // TEST PI - NOW WITH REAL APPROVAL VIA BACKEND
   const checkout = async () => {
+    if (payingRef.current) return; // a payment is already being prepared - ignore extra taps
     if (cart.length === 0) return;
     if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Please enter Full Name and Phone Number / WhatsApp first."); return; }
     if (deliveryType === "delivery" && !address.trim()) { setPayStatus("❌ Please enter Delivery Address."); return; }
-    const Pi = (window as any).Pi;
-    if (!Pi) { setPayStatus("❌ Open this site in Pi Browser to pay with Test Pi."); return; }
-    setPayStatus("⏳ Opening Pi Test Wallet... Approve in Pi Browser.");
+    payingRef.current = true;
+    setPaying(true);
+    payTimerRef.current = setTimeout(endPaying, 120000); // safety: never leave the button locked forever
+    setPayStatus("⏳ Preparing payment... please wait, do not tap again");
     try {
+      const ready = await waitForPi();
+      const Pi = (window as any).Pi;
+      if (!ready || !Pi) { setPayStatus("❌ Open this site in Pi Browser to pay with Test Pi (or wait a few seconds for Pi to load, then tap again)."); endPaying(); return; }
+      setPayStatus("⏳ Opening Pi Test Wallet... Approve in Pi Browser.");
       const auth = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
       // IDENTITY CHECK: the Pi account paying must be the logged-in shop user
       const piUser = auth?.user?.username;
       if (!piUser || piUser !== user) {
+        endPaying();
         logout("❌ Pi account " + (piUser ? "@" + piUser : "(unknown)") + " does not match the logged-in shop user @" + user + ". No payment was made. Please login again as yourself.");
         return;
       }
-      if (stuckRef.current) { setPayStatus("⚠️ A stuck payment was found. Tap Complete or Cancel in the box first, then tap Pay again."); return; }
+      if (stuckRef.current) { setPayStatus("⚠️ A stuck payment was found. Tap Complete or Cancel in the box first, then tap Pay again."); endPaying(); return; }
+      await warmPiServer();
       // Handle any unfinished payment from last expired try
       try { await Pi.getIncompletePayments?.((p: any) => {}); } catch {}
       await Pi.createPayment({ amount: parseFloat(grandTotal), memo: "SOSA Outfits - " + fullName + " - " + deliveryType, metadata: { fullName, phone, address, deliveryType, items: cart, orderCode } }, {
@@ -463,19 +526,28 @@ const myPoints = orders
           setPayStatus("⏳ Wallet opened - Approving payment now (this is what failed before)...");
           // THIS IS THE FIX: actually call backend to approve, don't just wait
           const res = await fetch("/api/pi/approve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
-          if (!res.ok) { setPayStatus("❌ Approval failed - Check Vercel PI_API_KEY. See steps below. Order NOT lost."); throw new Error("approve failed"); }
+          if (!res.ok) { setPayStatus("❌ Approval failed - Check Vercel PI_API_KEY. See steps below. Order NOT lost."); endPaying(); throw new Error("approve failed"); }
           setPayStatus("✅ Approved! Now confirm in your Wallet...");
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
           // Tell backend to complete it
           const done = await fetch("/api/pi/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) }).catch(() => null);
-          if (!done || !done.ok) { setPayStatus("⚠️ Payment sent but server completion failed (check PI_API_KEY in Vercel). Do NOT pay again - logout and login to Complete it."); return; }
-          saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode);
+          if (!done || !done.ok) { setPayStatus("⚠️ Payment sent but server completion failed (check PI_API_KEY in Vercel). Do NOT pay again - logout and login to Complete it."); endPaying(); return; }
+          saveOrder("✅ TEST PAID - Pi Test Payment Confirmed", txid, orderCode); // cart is cleared ONLY here, after success
+          endPaying();
         },
-        onCancel: () => { setPayStatus("❌ Payment cancelled. No Test Pi taken. Your cart is still saved."); },
-        onError: (e: any) => { setPayStatus("❌ " + (e?.message || "Test Pi error. If it says approval failed, do Step 2 below.")); },
+        onCancel: () => { setPayStatus("❌ Payment cancelled. No Test Pi taken. Your cart is still saved."); endPaying(); },
+        onError: (e: any) => {
+          const m = String(e?.message || e || "");
+          setPayStatus(/expire/i.test(m) ? EXPIRED_MSG : "❌ " + (m || "Test Pi error. If it says approval failed, do Step 2 below."));
+          endPaying();
+        },
       });
-    } catch (e: any) { setPayStatus("❌ " + (e?.message || "Test Pi error. Try again in Pi Browser.")); }
+    } catch (e: any) {
+      const m = String(e?.message || "");
+      setPayStatus(/expire/i.test(m) ? EXPIRED_MSG : "❌ " + (m || "Test Pi error. Try again in Pi Browser."));
+      endPaying();
+    }
   };
 
   const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
@@ -551,8 +623,8 @@ const myPoints = orders
         <button onClick={shareApp} style={mItem}><span>🔗 Share App</span></button>
         <a href={SOSA_WHATSAPP} target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>💬 WhatsApp Us</span></a>
         <a href={"mailto:" + SOSA_EMAIL} onClick={closeMenu} style={mItem}><span>✉️ Email Us<span style={mSub}>{SOSA_EMAIL}</span></span></a>
-        <a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>📍 Sosa Map<span style={mSub}>No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS. - Get Directions</span></span></a>
-        <a href="https://mapofpi.com" target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>🌍 Map Of Pi<span style={mSub}>sosa.pi/outfits</span></span></a>
+        <a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" onClick={(e) => { closeMenu(); openExternal(e, SOSA_MAP); }} style={mItem}><span>📍 Sosa Map<span style={mSub}>No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS. - Get Directions</span></span></a>
+        <a href={SOSA_MAP_OF_PI} target="_blank" rel="noopener noreferrer" onClick={(e) => { closeMenu(); openExternal(e, SOSA_MAP_OF_PI); }} style={mItem}><span>🌍 Map Of Pi<span style={mSub}>sosa.pi/outfits</span></span></a>
 
         <h3 style={{ fontSize: 15, margin: "18px 0 0", color: "#f5b301" }}>Follow Us</h3>
         {SOSA_SOCIAL.map((sc) => (
@@ -592,7 +664,7 @@ const myPoints = orders
         <p style={{ margin: "0 0 8px" }}>Welcome To SOPHISTICATED SAMPLES, SOSA-outfits - Luxury street general wears, shoes, hand bags, jeans, shirts, natives wears, shopping.</p>
         <p style={{ margin: "0 0 8px" }}>Self Pickup (Free): No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS.</p>
         <p style={{ margin: 0 }}>Delivery: 0.0001 Pi (1-2 days Lagos, 4-7 days outside Lagos)</p>
-        <p style={{ margin: "10px 0 0" }}><a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" style={{ color: "#b45309", fontWeight: 800 }}>📍 Sosa Map - Get Directions</a></p>
+        <p style={{ margin: "10px 0 0" }}><a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" onClick={(e) => openExternal(e, SOSA_MAP)} style={{ color: "#b45309", fontWeight: 800 }}>📍 Sosa Map - Get Directions</a></p>
       </div>
     ));
   } else if (popup === "terms") {
@@ -638,11 +710,12 @@ const myPoints = orders
         <input value={trackCode} onChange={(e) => setTrackCode(e.target.value)} placeholder="Order Code / Barcode e.g. SOSA-1120-203015-7391" style={{ ...inputStyle, border: "1px solid #ccc" }} />
         <button onClick={doTrack} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "10px 0", fontWeight: 800, marginTop: 8 }}>Track</button>
         {t === "need" && <p style={{ fontSize: 12, color: "#b00020", fontWeight: 700 }}>Please enter your phone number and the order code.</p>}
-        {t === "none" && <p style={{ fontSize: 12, color: "#b00020", fontWeight: 700 }}>No order found on this phone for that phone number and code. Check the barcode and the phone you used at checkout.</p>}
-        {t && typeof t === "object" && (
+        {t && t.error === "none" && <div style={{ fontSize: 12, color: "#b00020", fontWeight: 700, marginTop: 8 }}><p style={{ margin: 0 }}>{"No order found for Phone " + t.phone + " + Code " + t.code + ". Check My Orders for the exact code."}</p>{t.hint ? <p style={{ margin: "4px 0 0" }}>{t.hint}</p> : null}</div>}
+        {t && typeof t === "object" && !t.error && (
           <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 10, marginTop: 10 }}>
             <div style={{ fontSize: 11, color: "#777" }}>{t.date}</div>
             <div style={{ fontSize: 13, fontWeight: 800 }}>Order {t.code}</div>
+            <div style={{ fontSize: 12 }}><b>Name:</b> {t.fullName} • <b>Phone:</b> {t.phone}</div>
             {(t.items || []).map((it: any, j: number) => <div key={j} style={{ fontSize: 12 }}>• {it.name} - {it.color} / {it.size} x {it.qty} - {it.price}</div>)}
             <div style={{ fontSize: 13, fontWeight: 800, marginTop: 4 }}>Total: {t.total} Pi</div>
             <div style={{ fontSize: 12 }}><b>Delivery Type:</b> {t.deliveryType === "pickup" ? "Self Pickup (Free)" : "Delivery"}</div>
@@ -775,7 +848,7 @@ const myPoints = orders
             <p style={{ fontSize: 15, fontWeight: 800, margin: "14px 0" }}>Grand Total: {grandTotal} Pi {deliveryType === "delivery" ? "(incl. delivery - 1-2 days Lagos, 4-7 days outside Lagos)" : "(pickup - free)"}</p>
             {cart.length > 0 && <Barcode code={orderCode} />}
             {cart.length > 0 && <p style={{ fontSize: 13, fontWeight: 800, margin: "12px 0 0", lineHeight: 1.4 }}>Pay Now = Your goods are secured. Pay Later = Your list is only saved, goods are NOT reserved.</p>}
-            {cart.length > 0 && <button onClick={checkout} style={{ width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 12 }}>Pay with Pi - {grandTotal} Pi</button>}
+            {cart.length > 0 && <button onClick={checkout} disabled={paying} style={{ opacity: paying ? 0.6 : 1, width: "100%", background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "12px 0", fontWeight: 800, marginTop: 12 }}>{paying ? "⏳ Preparing payment... please wait, do not tap again" : "Pay with Pi - " + grandTotal + " Pi"}</button>}
             {cart.length > 0 && <button onClick={() => { if (!fullName.trim() || !phone.trim()) { setPayStatus("❌ Enter Full Name + Phone first."); return; } saveOrder("⏳ PENDING - Saved List Only, NOT Reserved - Pay on Pickup / WhatsApp", "", orderCode); }} style={{ width: "100%", background: "#fff", color: "#000", border: 0, borderRadius: 20, padding: "11px 0", fontWeight: 800, marginTop: 8 }}>Save List for Pickup - Pay When You Come (Not Reserved)</button>}
             {cart.length > 0 && <div style={{ background: "#111", color: "#ccc", borderRadius: 8, padding: 8, fontSize: 11, lineHeight: 1.5, marginTop: 6 }}>What does this mean? This only saves your list. We have NOT booked or reserved your shoes. No payment has been taken. Your goods are NOT kept aside. First person to pay gets the goods. When you come to the shop, show your barcode SOSA-XXXXXX, then pay with Pi, transfer or cash, then collect your goods. If you don&apos;t come within 24 hours, this saved list will expire.</div>}
             <button onClick={() => { setPanel(null); setPayStatus(""); }} style={{ width: "100%", background: "transparent", color: "#fff", border: 0, padding: "10px 0", fontWeight: 700 }}>← Back to Shop</button>
