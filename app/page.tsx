@@ -342,28 +342,49 @@ const myPoints = orders
     if (name === "track") { setTrackPhone(""); setTrackCode(""); setTrackResult(null); }
     if (name === "share") setCopyMsg("");
     setPopup(name);
-  };
-  const shareApp = async () => {
-    setMenuOpen(false);
-    const nav: any = navigator;
-    if (nav.share) {
-      try { await nav.share({ title: "SOSA Outfits", text: "SOSA Outfits - Sophisticated Samples", url: SOSA_APP_URL }); } catch {}
+ const shareApp = async () => {
+  setMenuOpen(false);
+  // SOSA referral link - uses logged-in Pi username
+  const refName = (user?.username || "chijoe09").replace("@", "").trim();
+  const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
+  const navi: any = navigator;
+  if (navi.share) {
+    try {
+      await navi.share({
+        title: "SOSA Outfits",
+        text: `Join SOSA Outfits - Luxury street wears! Use my link: ${referralLink}`,
+        url: referralLink,
+      });
       return;
+    } catch {}
+  }
+  setCopyMsg("");
+  setPopup("share");
+};
+ const copyLink = async () => {
+  const refName = (user?.username || "chijoe09").replace("@", "").trim();
+  const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
+  try { await navigator.clipboard.writeText(referralLink); setCopyMsg("Link copied!"); }
+  catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = referralLink; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+      setCopyMsg("Link copied!");
+    } catch { setCopyMsg("Copy failed, long-press to copy"); }
+  }
+};
+// SOSA Tour - read ?ref= from link
+const [tourRef, setTourRef] = useState("");
+React.useEffect(() => {
+  try {
+    const r = new URLSearchParams(window.location.search).get("ref");
+    if (r) {
+      setTourRef(r.replace("@", "").trim());
+      setPopup("tour");
     }
-    setCopyMsg("");
-    setPopup("share");
-  };
-  const copyLink = async () => {
-    try { await navigator.clipboard.writeText(SOSA_APP_URL); setCopyMsg("✅ Link copied"); }
-    catch {
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = SOSA_APP_URL; document.body.appendChild(ta); ta.select();
-        document.execCommand("copy"); document.body.removeChild(ta);
-        setCopyMsg("✅ Link copied");
-      } catch { setCopyMsg("❌ Could not copy. Link: " + SOSA_APP_URL); }
-    }
-  };
+  } catch {}
+}, []);
   const ratingList = Object.values(ratings) as any[];
   const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
   const myRating = user ? ratings[user] : null;
@@ -672,17 +693,33 @@ const myPoints = orders
   } else if (popup === "privacy") {
     popupUI = popupBox("Privacy", <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>SOSA Outfits Privacy - We only use your name, phone, and order to deliver your goods. We do not share your data.</p>);
   } else if (popup === "share") {
-    const enc = encodeURIComponent(SOSA_APP_URL);
-    popupUI = popupBox("Share App", (
-      <div>
-        <p style={{ fontSize: 12, color: "#555", margin: "0 0 4px", wordBreak: "break-all" }}>{SOSA_APP_URL}</p>
-        <a href={"https://wa.me/?text=" + encodeURIComponent("SOSA Outfits - Sophisticated Samples " + SOSA_APP_URL)} target="_blank" rel="noopener noreferrer" style={linkBtn}>WhatsApp</a>
-        <a href={"https://www.facebook.com/sharer/sharer.php?u=" + enc} target="_blank" rel="noopener noreferrer" style={linkBtn}>Facebook</a>
-        <a href={"https://twitter.com/intent/tweet?url=" + enc + "&text=" + encodeURIComponent("SOSA Outfits - Sophisticated Samples")} target="_blank" rel="noopener noreferrer" style={linkBtn}>X</a>
-        <button onClick={copyLink} style={{ ...linkBtn, width: "100%", border: 0, background: "#f5b301", color: "#000" }}>Copy Link</button>
-        {copyMsg && <p style={{ fontSize: 12, fontWeight: 700, margin: "8px 0 0", wordBreak: "break-all" }}>{copyMsg}</p>}
-      </div>
-    ));
+  const refName = (user?.username || "chijoe09").replace("@", "").trim();
+  const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
+  const enc = encodeURIComponent(referralLink);
+  popupUI = popupBox("Share App", (
+    <div>
+      <p style={{ fontSize: 12, color: "#555", margin: "0 0 4px", wordBreak: "break-all" }}>Your referral link:</p>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 8px", wordBreak: "break-all" }}>{referralLink}</p>
+      <a href={"https://wa.me/?text=" + encodeURIComponent("SOSA Outfits - Sophisticated Samples " + referralLink)} target="_blank" rel="noopener noreferrer" style={linkBtn}>WhatsApp</a>
+      <a href={"https://www.facebook.com/sharer/sharer.php?u=" + enc} target="_blank" rel="noopener noreferrer" style={linkBtn}>Facebook</a>
+      <a href={"https://twitter.com/intent/tweet?url=" + enc + "&text=" + encodeURIComponent("SOSA Outfits - Sophisticated Samples")} target="_blank" rel="noopener noreferrer" style={linkBtn}>X (Twitter)</a>
+      <button onClick={copyLink} style={{ ...linkBtn, width: "100%", border: 0, background: "#f5b301", color: "#000" }}>{copyMsg || "Copy Link"}</button>
+      {copyMsg && <p style={{ fontSize: 12, fontWeight: 700, margin: "8px 0 0", wordBreak: "break-all" }}>{copyMsg}</p>}
+    </div>
+  ));
+}
+} else if (popup === "tour") {
+  popupUI = popupBox("Welcome to SOSA!", (
+    <div>
+      <p style={{ fontSize: 14, margin: "0 0 8px" }}>You were invited by <b>@{tourRef || "a friend"}</b></p>
+      <p style={{ fontSize: 13, color: "#555", margin: "0 0 8px" }}>Take a quick tour:</p>
+      <p style={{ fontSize: 13, margin: "0 0 4px" }}>1. Shop luxury wears, shoes, bags</p>
+      <p style={{ fontSize: 13, margin: "0 0 4px" }}>2. Add to Cart - Pay with Pi</p>
+      <p style={{ fontSize: 13, margin: "0 0 12px" }}>3. Earn points on Leadership Board</p>
+      <button onClick={() => setPopup("")} style={{ width: "100%", padding: 12, border: 0, background: "#f5b301", color: "#000", fontWeight: 800, borderRadius: 8 }}>Start Shopping</button>
+    </div>
+  ));
+}
   } else if (popup === "rate") {
     popupUI = popupBox("⭐ Rate Us", myRating ? (
       <div style={{ fontSize: 14, lineHeight: 1.6 }}>
