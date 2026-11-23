@@ -711,12 +711,11 @@ React.useEffect(() => {
 } else if (popup === "tour") {
   popupUI = popupBox("Welcome to SOSA!", (
     <div>
-      <p style={{ fontSize: 14, margin: "0 0 8px" }}>You were invited by <b>@{tourRef || "a friend"}</b></p>
-      <p style={{ fontSize: 13, color: "#555", margin: "0 0 8px" }}>Take a quick tour:</p>
-      <p style={{ fontSize: 13, margin: "0 0 4px" }}>1. Shop luxury wears, shoes, bags</p>
-      <p style={{ fontSize: 13, margin: "0 0 4px" }}>2. Add to Cart - Pay with Pi</p>
-      <p style={{ fontSize: 13, margin: "0 0 12px" }}>3. Earn points on Leadership Board</p>
-      <button onClick={() => setPopup("")} style={{ width: "100%", padding: 12, border: 0, background: "#f5b301", color: "#000", fontWeight: 800, borderRadius: 8 }}>Start Shopping</button>
+      <p>You were invited by a friend</p>
+      <p>1. Shop luxury wears</p>
+      <p>2. Add to Cart - Pay with Pi</p>
+      <p>3. Earn points on Leadership Board</p>
+      <button onClick={() => setPopup("")}>Start Shopping</button>
     </div>
   ));
 }
