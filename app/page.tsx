@@ -225,7 +225,6 @@ function Slideshow({ products, getChoice, onOpen }: { products: any[]; getChoice
     </div>
   );
 }
-
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -342,49 +341,50 @@ const myPoints = orders
     if (name === "track") { setTrackPhone(""); setTrackCode(""); setTrackResult(null); }
     if (name === "share") setCopyMsg("");
     setPopup(name);
- const shareApp = async () => {
-  setMenuOpen(false);
-  // SOSA referral link - uses logged-in Pi username
-  const refName = (user?.username || "chijoe09").replace("@", "").trim();
-  const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
-  const navi: any = navigator;
-  if (navi.share) {
-    try {
-      await navi.share({
-        title: "SOSA Outfits",
-        text: `Join SOSA Outfits - Luxury street wears! Use my link: ${referralLink}`,
-        url: referralLink,
-      });
-      return;
-    } catch {}
-  }
-  setCopyMsg("");
-  setPopup("share");
-};
- const copyLink = async () => {
-  const refName = (user?.username || "chijoe09").replace("@", "").trim();
-  const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
-  try { await navigator.clipboard.writeText(referralLink); setCopyMsg("Link copied!"); }
-  catch {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = referralLink; document.body.appendChild(ta); ta.select();
-      document.execCommand("copy"); document.body.removeChild(ta);
-      setCopyMsg("Link copied!");
-    } catch { setCopyMsg("Copy failed, long-press to copy"); }
-  }
-};
-// SOSA Tour - read ?ref= from link
-const [tourRef, setTourRef] = useState("");
-React.useEffect(() => {
-  try {
-    const r = new URLSearchParams(window.location.search).get("ref");
-    if (r) {
-      setTourRef(r.replace("@", "").trim());
-      setPopup("tour");
+  };
+  const shareApp = async () => {
+    setMenuOpen(false);
+    // SOSA referral link - uses logged-in Pi username
+    const refName = (user || "chijoe09").replace("@", "").trim();
+    const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
+    const navi: any = navigator;
+    if (navi.share) {
+      try {
+        await navi.share({
+          title: "SOSA Outfits",
+          text: `Join SOSA Outfits - Luxury street wears! Use my link: ${referralLink}`,
+          url: referralLink,
+        });
+        return;
+      } catch {}
     }
-  } catch {}
-}, []);
+    setCopyMsg("");
+    setPopup("share");
+  };
+  const copyLink = async () => {
+    const refName = (user || "chijoe09").replace("@", "").trim();
+    const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
+    try { await navigator.clipboard.writeText(referralLink); setCopyMsg("Link copied!"); }
+    catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = referralLink; document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+        setCopyMsg("Link copied!");
+      } catch { setCopyMsg("Copy failed, long-press to copy"); }
+    }
+  };
+  // SOSA Tour - read ?ref= from link
+  const [tourRef, setTourRef] = useState("");
+  useEffect(() => {
+    try {
+      const r = new URLSearchParams(window.location.search).get("ref");
+      if (r) {
+        setTourRef(r.replace("@", "").trim());
+        setPopup("tour");
+      }
+    } catch {}
+  }, []);
   const ratingList = Object.values(ratings) as any[];
   const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
   const myRating = user ? ratings[user] : null;
@@ -570,8 +570,7 @@ React.useEffect(() => {
       endPaying();
     }
   };
-
-  const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
+    const btnStyle: any = { background: dark ? "#fff" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700 };
   const inputStyle: any = { width: "100%", padding: "12px", borderRadius: 10, border: "none", fontSize: 14, boxSizing: "border-box" as any, marginTop: 8, background: "#fff", color: "#000" };
 
   const stuckBox = stuck ? (
@@ -693,7 +692,7 @@ React.useEffect(() => {
   } else if (popup === "privacy") {
     popupUI = popupBox("Privacy", <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>SOSA Outfits Privacy - We only use your name, phone, and order to deliver your goods. We do not share your data.</p>);
   } else if (popup === "share") {
-  const refName = (user?.username || "chijoe09").replace("@", "").trim();
+  const refName = (user || "chijoe09").replace("@", "").trim();
   const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
   const enc = encodeURIComponent(referralLink);
   popupUI = popupBox("Share App", (
@@ -765,8 +764,7 @@ React.useEffect(() => {
       </div>
     ));
   }
-
-  return (
+    return (
     <div style={{ background: bg, color: mainText, minHeight: "100vh", fontFamily: "Arial, sans-serif", paddingBottom: 20 }}>
       {stuckBox}
       {menuUI}
