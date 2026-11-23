@@ -708,7 +708,7 @@ React.useEffect(() => {
     </div>
   ));
 }
-} else if (popup === "tour") {
+ else if (popup === "tour") {
   popupUI = popupBox("Welcome to SOSA!", (
     <div>
       <p>You were invited by a friend</p>
@@ -719,7 +719,7 @@ React.useEffect(() => {
     </div>
   ));
 }
-  } else if (popup === "rate") {
+   else if (popup === "rate") {
     popupUI = popupBox("⭐ Rate Us", myRating ? (
       <div style={{ fontSize: 14, lineHeight: 1.6 }}>
         <p style={{ margin: 0, fontWeight: 800 }}>Thanks, you rated {myRating.stars} stars</p>
