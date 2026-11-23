@@ -718,8 +718,7 @@ React.useEffect(() => {
       <button onClick={() => setPopup("")}>Start Shopping</button>
     </div>
   ));
-}
-   else if (popup === "rate") {
+}else if (popup === "rate") {
     popupUI = popupBox("⭐ Rate Us", myRating ? (
       <div style={{ fontSize: 14, lineHeight: 1.6 }}>
         <p style={{ margin: 0, fontWeight: 800 }}>Thanks, you rated {myRating.stars} stars</p>
