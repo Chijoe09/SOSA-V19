@@ -374,17 +374,28 @@ const myPoints = orders
       } catch { setCopyMsg("Copy failed, long-press to copy"); }
     }
   };
-  // SOSA Tour - read ?ref= from link
-  const [tourRef, setTourRef] = useState("");
-  useEffect(() => {
-    try {
-      const r = new URLSearchParams(window.location.search).get("ref");
-      if (r) {
-        setTourRef(r.replace("@", "").trim());
-        setPopup("tour");
-      }
-    } catch {}
-  }, []);
+  // SOSA Tour - read ?ref= from link + SAVE it + load shared board
+const [tourRef, setTourRef] = useState("");
+const [sharedBoard, setSharedBoard] = useState<any[]>([]);
+const loadSharedBoard = async () => {
+  try {
+    const r = await fetch("/api/leaderboard");
+    const j = await r.json();
+    if (j.board) setSharedBoard(j.board);
+  } catch {}
+};
+useEffect(() => {
+  loadSharedBoard();
+  try {
+    const r = new URLSearchParams(window.location.search).get("ref");
+    if (r) {
+      const clean = r.replace("@", "").trim().toLowerCase();
+      setTourRef(clean);
+      localStorage.setItem("sosa_referred_by", clean);
+      setPopup("tour");
+    }
+  } catch {}
+}, []);
   const ratingList = Object.values(ratings) as any[];
   const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
   const myRating = user ? ratings[user] : null;
@@ -491,19 +502,27 @@ const myPoints = orders
   }, [cartCount]);
 
   const saveOrder = (status: string, txid?: string, code?: string) => {
-    if (!user) return; // never save an order without a logged-in Pi user
-    const newOrder = { id: Date.now(), code: code || orderCode, items: [...cart], total: grandTotal, subtotal: subtotal.toFixed(4), deliveryFee, deliveryType, fullName, phone, address, date: new Date().toLocaleString(), txid: txid || "", status, piUser: user };
-    const nextOrders = [newOrder, ...orders];
-    setOrders(nextOrders);
-    try {
-      localStorage.setItem(ordersKey(user), JSON.stringify(nextOrders));
-      const pts = nextOrders.filter((o) => o.status && o.status.includes("PAID")).reduce((sum, o) => sum + parseFloat(o.total || "0"), 0) * 10;
-      localStorage.setItem(pointsKey(user), pts.toFixed(1));
-    } catch {}
-    setCart([]);
-    setPanel("orders");
-    setPayStatus("");
-  };
+  if (!user) return;
+  const newOrder = { id: Date.now(), code: code || orderCode, items: [...cart], total: grandTotal, subtotal: subtotal.toFixed(4), deliveryFee, deliveryType, fullName, phone, address, date: new Date().toLocaleString(), txid: txid || "", status, piUser: user };
+  const nextOrders = [newOrder, ...orders];
+  setOrders(nextOrders);
+  try {
+    localStorage.setItem(ordersKey(user), JSON.stringify(nextOrders));
+    const pts = nextOrders.filter((o) => o.status && o.status.includes("PAID")).reduce((sum, o) => sum + parseFloat(o.total || "0"), 0) * 10;
+    localStorage.setItem(pointsKey(user), pts.toFixed(1));
+    if (status.includes("PAID")) {
+      const refBy = (localStorage.getItem("sosa_referred_by") || "").toLowerCase();
+      fetch("/api/leaderboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyer: user, buyerPts: pts, referrer: refBy, orderId: String(newOrder.id), orderTotal: parseFloat(grandTotal) }),
+      }).then(() => loadSharedBoard()).catch(() => {});
+    }
+  } catch {}
+  setCart([]);
+  setPanel("orders");
+  setPayStatus("");
+};
 
   // Waits (max ~10s) until the Pi SDK is loaded AND initialised, so the payment is created only once, when ready
   const waitForPi = async () => {
@@ -614,15 +633,17 @@ const myPoints = orders
     return catOk && (!q || hay.includes(q));
   });
 
-  // Leadership Board: sort by points HIGH to LOW, rank = position after sorting
-  const boardAll: any[] = [
-    { name: "@" + user, pts: myPoints, you: true },
-    { name: "@sosa_fan1", pts: 12.5, you: false },
-    { name: "@lagos_queen", pts: 8.0, you: false },
-    { name: "@owambe_star", pts: 5.5, you: false },
-  ].sort((a, b) => b.pts - a.pts);
-  const boardTop = boardAll.slice(0, 4);
-  const myBoardIdx = boardAll.findIndex((u) => u.you);
+// Leadership Board: REAL shared board from backend, sort HIGH to LOW
+const boardAll: any[] = (() => {
+  const map: any = {};
+  sharedBoard.forEach((u: any) => { map[String(u.name).replace("@","").toLowerCase()] = Number(u.pts) || 0; });
+  if (user) map[user.toLowerCase()] = myPoints;
+  return Object.keys(map)
+    .map((k) => ({ name: "@" + k, pts: map[k], you: k === (user || "").toLowerCase() }))
+    .sort((a, b) => b.pts - a.pts);
+})();
+const boardTop = boardAll.slice(0, 10);
+const myBoardIdx = boardAll.findIndex((u) => u.you);
 
   const mItem: any = { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: "#111", color: "#fff", border: 0, borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 700, marginTop: 8, textDecoration: "none", boxSizing: "border-box" };
   const mSub: any = { display: "block", fontSize: 11, fontWeight: 400, color: "#aaa", marginTop: 2 };
