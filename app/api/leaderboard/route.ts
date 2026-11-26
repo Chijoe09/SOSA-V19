@@ -1,31 +1,161 @@
-// SOSA Shared Leadership Board - one board for ALL phones
-const g: any = globalThis as any;
-if (!g.__sosa_board) g.__sosa_board = {};
-if (!g.__sosa_paid) g.__sosa_paid = new Set();
+import { NextResponse } from "next/server";
 
-export async function GET() {
-  const list = Object.keys(g.__sosa_board)
-    .map((k) => ({ name: "@" + k, pts: Number(g.__sosa_board[k]) || 0 }))
-    .sort((a, b) => b.pts - a.pts)
-    .slice(0, 20);
-  return Response.json({ board: list });
+export const dynamic = "force-dynamic";
+
+/*
+  SOSA Leadership Board (shared by all phones).
+
+  MERGE, never overwrite:
+    board[user]  = highest ORDER points ever reported for that user (Math.max)
+    bonus[user]  = referral bonus earned on the server (20% of the buyer's order points, once per orderId)
+    floor[user]  = highest TOTAL the user's own phone ever saw for them (used to rebuild after a redeploy)
+    total(user)  = Math.max(board + bonus, floor)
+
+  Storage: if KV_REST_API_URL + KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_URL + _TOKEN) exist, data lives in
+  Redis and survives redeploys. If not, it lives in server memory (globalThis) which Vercel wipes on every
+  redeploy and which is NOT shared between server instances: phones then rebuild it by syncing on login.
+*/
+
+// "chijoe09i" is a typo of "chijoe09": always merged into chijoe09
+const ALIASES: Record<string, string> = { chijoe09i: "chijoe09" };
+
+// EXISTING POINTS - applied once so a redeploy never resets them. Real syncs can only RAISE the order points.
+// (chijoe09: 20.3 order points + 0.4 bonus = 20.7). You can delete these two lines once Redis is connected.
+const SEED_BOARD: Record<string, number> = { ifecolight: 38.1, chijoe09: 20.3 };
+const SEED_BONUS: Record<string, number> = { chijoe09: 0.4 };
+
+const WARNING = "Server storage not connected: board lives in memory and is rebuilt from phone syncs after a redeploy";
+
+const normUser = (v: any) => {
+  let k = String(v ?? "").replace("@", "").toLowerCase().trim();
+  if (ALIASES[k]) k = ALIASES[k];
+  return k.slice(0, 40);
+};
+const num = (v: any, max: number) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, max) : 0;
+};
+const round = (n: number) => Math.round(n * 100) / 100;
+
+// ---------- storage ----------
+const g: any = globalThis as any;
+const kvUrl = () => process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
+const kvToken = () => process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
+const persistent = () => !!(kvUrl() && kvToken());
+
+async function redis(cmd: (string | number)[]): Promise<any> {
+  const r = await fetch(kvUrl(), {
+    method: "POST",
+    headers: { Authorization: "Bearer " + kvToken(), "Content-Type": "application/json" },
+    body: JSON.stringify(cmd),
+    cache: "no-store",
+  });
+  const j: any = await r.json().catch(() => ({}));
+  if (!r.ok || j.error) throw new Error(j.error || "storage error " + r.status);
+  return j.result;
 }
 
+type Name = "board" | "bonus" | "floor";
+const memMap = (n: Name): Map<string, number> => g["__sosa_" + n] || (g["__sosa_" + n] = new Map<string, number>());
+const memSeen = (): Set<string> => g.__sosa_seen || (g.__sosa_seen = new Set<string>());
+
+async function readAll(n: Name): Promise<Map<string, number>> {
+  if (!persistent()) return memMap(n);
+  const flat: any[] = (await redis(["HGETALL", "sosa:lb:" + n])) || [];
+  const m = new Map<string, number>();
+  for (let i = 0; i + 1 < flat.length; i += 2) m.set(String(flat[i]), Number(flat[i + 1]) || 0);
+  return m;
+}
+async function setVal(n: Name, k: string, v: number) {
+  if (!persistent()) memMap(n).set(k, v);
+  else await redis(["HSET", "sosa:lb:" + n, k, String(v)]);
+}
+async function addVal(n: Name, k: string, d: number) {
+  if (!persistent()) memMap(n).set(k, (memMap(n).get(k) || 0) + d);
+  else await redis(["HINCRBYFLOAT", "sosa:lb:" + n, k, String(d)]);
+}
+async function markSeen(id: string): Promise<boolean> {
+  if (!persistent()) {
+    const s = memSeen();
+    if (s.has(id)) return false;
+    s.add(id);
+    return true;
+  }
+  return (await redis(["SET", "sosa:lb:seen:" + id, "1", "NX"])) === "OK";
+}
+async function ensureSeed() {
+  if (persistent()) {
+    if ((await redis(["SET", "sosa:lb:seeded", "1", "NX"])) !== "OK") return;
+    for (const [k, v] of Object.entries(SEED_BOARD)) await redis(["HSETNX", "sosa:lb:board", k, String(v)]);
+    for (const [k, v] of Object.entries(SEED_BONUS)) await redis(["HSETNX", "sosa:lb:bonus", k, String(v)]);
+    return;
+  }
+  if (g.__sosa_seeded) return;
+  g.__sosa_seeded = true;
+  for (const [k, v] of Object.entries(SEED_BOARD)) if (!memMap("board").has(k)) memMap("board").set(k, v);
+  for (const [k, v] of Object.entries(SEED_BONUS)) if (!memMap("bonus").has(k)) memMap("bonus").set(k, v);
+}
+
+async function buildBoard() {
+  const [board, bonus, floor] = await Promise.all([readAll("board"), readAll("bonus"), readAll("floor")]);
+  const users = new Set<string>([...Array.from(board.keys()), ...Array.from(bonus.keys()), ...Array.from(floor.keys())]);
+  const rows: { name: string; pts: number }[] = [];
+  users.forEach((u) => {
+    const k = normUser(u);
+    if (!k) return;
+    const pts = Math.max((board.get(u) || 0) + (bonus.get(u) || 0), floor.get(u) || 0);
+    const ex = rows.find((r) => r.name === "@" + k);
+    if (ex) ex.pts = round(ex.pts + pts); // an old alias row still in storage is merged, never shown twice
+    else rows.push({ name: "@" + k, pts: round(pts) });
+  });
+  rows.sort((a, b) => b.pts - a.pts);
+  return rows;
+}
+const info = () => (persistent() ? { persistent: true, storage: "redis" } : { persistent: false, storage: "memory", warning: WARNING });
+
+// GET -> the whole board
+export async function GET() {
+  try {
+    await ensureSeed();
+    return NextResponse.json({ ok: true, board: await buildBoard(), ...info() });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || "Server error", board: [], ...info() }, { status: 500 });
+  }
+}
+
+// POST { buyer, buyerPts, referrer, orderId, orderTotal, knownTotal? } -> merge, then return the whole board
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const buyer = String(body.buyer || "").replace("@", "").trim().toLowerCase();
-    const referrer = String(body.referrer || "").replace("@", "").trim().toLowerCase();
-    const buyerPts = Number(body.buyerPts || 0);
-    const orderId = String(body.orderId || "");
-    if (!buyer) return Response.json({ ok: false }, { status: 400 });
-    g.__sosa_board[buyer] = buyerPts;
-    let bonus = 0;
-    if (referrer && referrer !== buyer && orderId && !g.__sosa_paid.has(orderId)) {
-      bonus = Number(body.orderTotal || 0) * 10 * 0.2;
-      g.__sosa_board[referrer] = (g.__sosa_board[referrer] || 0) + bonus;
-      g.__sosa_paid.add(orderId);
+    const body: any = await req.json().catch(() => ({}));
+    const buyer = normUser(body.buyer);
+    if (!buyer) return NextResponse.json({ ok: false, error: "buyer required" }, { status: 400 });
+    const referrer = normUser(body.referrer);
+    const buyerPts = num(body.buyerPts, 1e7);
+    const knownTotal = num(body.knownTotal, 1e7);
+    const orderTotal = num(body.orderTotal, 1e4);
+    const orderId = String(body.orderId ?? "").trim().slice(0, 80);
+
+    await ensureSeed();
+
+    // MERGE: points only go up
+    if (buyerPts > 0) {
+      const cur = (await readAll("board")).get(buyer) || 0;
+      if (buyerPts > cur) await setVal("board", buyer, buyerPts);
     }
-    return Response.json({ ok: true, bonus });
-  } catch { return Response.json({ ok: false }, { status: 500 }); }
+    if (knownTotal > 0) {
+      const cur = (await readAll("floor")).get(buyer) || 0;
+      if (knownTotal > cur) await setVal("floor", buyer, knownTotal);
     }
+    // Referral bonus: 20% of the order points, ONCE per orderId. A sync (orderTotal 0 / no referrer) never gives bonus.
+    let bonusGiven = 0;
+    if (referrer && referrer !== buyer && orderId && orderTotal > 0) {
+      if (await markSeen(orderId)) {
+        bonusGiven = round(orderTotal * 10 * 0.2);
+        await addVal("bonus", referrer, bonusGiven);
+      }
+    }
+    return NextResponse.json({ ok: true, bonusGiven, board: await buildBoard(), ...info() });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || "Server error", ...info() }, { status: 500 });
+  }
+}
