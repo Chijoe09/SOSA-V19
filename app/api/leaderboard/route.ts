@@ -146,11 +146,11 @@ export async function POST(req: Request) {
       const cur = (await readAll("floor")).get(buyer) || 0;
       if (knownTotal > cur) await setVal("floor", buyer, knownTotal);
     }
-    // Referral bonus: 20% of the order points, ONCE per orderId. A sync (orderTotal 0 / no referrer) never gives bonus.
+    // Referral bonus: 10% of order points, FIRST order only, max 5 pts per invitee.
     let bonusGiven = 0;
     if (referrer && referrer !== buyer && orderId && orderTotal > 0) {
-      if (await markSeen(orderId)) {
-        bonusGiven = round(orderTotal * 10 * 0.2);
+      if (await markSeen(`ref-first-${buyer}`)) {
+        bonusGiven = Math.min(5, round(orderTotal * 10 * 0.1));
         await addVal("bonus", referrer, bonusGiven);
       }
     }
