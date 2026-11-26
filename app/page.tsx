@@ -82,30 +82,6 @@ const newOrderCode = () => {
   return "SOSA-" + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + p(Math.floor(Math.random() * 10000), 4);
 };
 
-// ===== Leadership Board helpers =====
-const BOARD_ALIASES: Record<string, string> = { chijoe09i: "chijoe09" }; // typo account -> real account
-const normUser = (v: any) => {
-  let k = String(v ?? "").replace("@", "").toLowerCase().trim();
-  if (BOARD_ALIASES[k]) k = BOARD_ALIASES[k];
-  return k;
-};
-const normRef = normUser; // used for EVERY referrer (link ?ref=, sosa_referred_by, order post)
-
-// One row per person. "You" is only a label. Server total is never lowered by the local points. Sorted high to low.
-const buildBoard = (sharedBoard: any[], user: string | null, myPoints: number) => {
-  const map: Record<string, number> = Object.create(null);
-  (Array.isArray(sharedBoard) ? sharedBoard : []).forEach((u: any) => {
-    const k = normUser(u && u.name);
-    if (!k) return;
-    map[k] = (map[k] || 0) + (Number(u.pts) || 0);
-  });
-  const me = user ? normUser(user) : "";
-  if (me) map[me] = Math.max(map[me] || 0, myPoints);
-  return Object.keys(map)
-    .map((k) => ({ key: k, name: "@" + k, pts: map[k], you: k === me }))
-    .sort((a, b) => b.pts - a.pts);
-};
-
 function SosaLogo() {
   return (
     <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -369,7 +345,7 @@ const myPoints = orders
   const shareApp = async () => {
     setMenuOpen(false);
     // SOSA referral link - uses logged-in Pi username
-    const refName = String(user || "").replace("@", "").toLowerCase().trim();
+    const refName = (user || "chijoe09").replace("@", "").trim();
     const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
     const navi: any = navigator;
     if (navi.share) {
@@ -386,7 +362,7 @@ const myPoints = orders
     setPopup("share");
   };
   const copyLink = async () => {
-    const refName = String(user || "").replace("@", "").toLowerCase().trim();
+    const refName = (user || "chijoe09").replace("@", "").trim();
     const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
     try { await navigator.clipboard.writeText(referralLink); setCopyMsg("Link copied!"); }
     catch {
@@ -403,17 +379,9 @@ const [tourRef, setTourRef] = useState("");
 const [sharedBoard, setSharedBoard] = useState<any[]>([]);
 const loadSharedBoard = async () => {
   try {
-    const r = await fetch("/api/leaderboard", { cache: "no-store" });
-    if (!r.ok) return;
+    const r = await fetch("/api/leaderboard");
     const j = await r.json();
-    const rows: any[] = Array.isArray(j) ? j : Array.isArray(j && j.board) ? j.board : [];
-    setSharedBoard(rows);
-    if (user) {
-      const me = normUser(user);
-      const row = rows.find((x: any) => normUser(x.name) === me);
-      // remember my last known total: lets the server rebuild my points after a redeploy
-      if (row) { try { localStorage.setItem("sosa_last_total_@" + me, String(Number(row.pts) || 0)); } catch {} }
-    }
+    if (j.board) setSharedBoard(j.board);
   } catch {}
 };
 useEffect(() => {
@@ -421,39 +389,13 @@ useEffect(() => {
   try {
     const r = new URLSearchParams(window.location.search).get("ref");
     if (r) {
-      const clean = normRef(r);
+      const clean = r.replace("@", "").trim().toLowerCase();
       setTourRef(clean);
       localStorage.setItem("sosa_referred_by", clean);
       setPopup("tour");
     }
   } catch {}
 }, []);
-
-// Sync my ORDER points to the shared board on login (never any bonus), then reload the board
-useEffect(() => {
-  if (!user) return;
-  const me = normUser(user);
-  let mirror = 0, known = 0;
-  try {
-    mirror = parseFloat(localStorage.getItem(pointsKey(user)) || "0") || 0;
-    known = parseFloat(localStorage.getItem("sosa_last_total_@" + me) || "0") || 0;
-  } catch {}
-  const fromOrders = orders.filter((o) => o.status && o.status.includes("PAID")).reduce((s, o) => s + parseFloat(o.total || "0"), 0) * 10;
-  const myPts = Math.max(mirror, fromOrders);
-  if (myPts > 0 || known > 0) {
-    fetch("/api/leaderboard", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ buyer: user, buyerPts: myPts, knownTotal: known, referrer: "", orderId: "sync-" + me, orderTotal: 0 }),
-    }).then(() => loadSharedBoard()).catch(() => {});
-  } else {
-    loadSharedBoard();
-  }
-}, [user]);
-
-// Reload the shared board EVERY time the Leadership Board opens
-useEffect(() => { if (panel === "board") loadSharedBoard(); }, [panel]);
-
   const ratingList = Object.values(ratings) as any[];
   const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
   const myRating = user ? ratings[user] : null;
@@ -569,7 +511,7 @@ useEffect(() => { if (panel === "board") loadSharedBoard(); }, [panel]);
     const pts = nextOrders.filter((o) => o.status && o.status.includes("PAID")).reduce((sum, o) => sum + parseFloat(o.total || "0"), 0) * 10;
     localStorage.setItem(pointsKey(user), pts.toFixed(1));
     if (status.includes("PAID")) {
-      const refBy = normRef(localStorage.getItem("sosa_referred_by") || "");
+      const refBy = (localStorage.getItem("sosa_referred_by") || "").toLowerCase();
       fetch("/api/leaderboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -691,8 +633,15 @@ useEffect(() => { if (panel === "board") loadSharedBoard(); }, [panel]);
     return catOk && (!q || hay.includes(q));
   });
 
-// Leadership Board: REAL shared board from backend, sort HIGH to LOW (merged, no duplicates, Math.max with my points)
-const boardAll: any[] = buildBoard(sharedBoard, user, myPoints);
+// Leadership Board: REAL shared board from backend, sort HIGH to LOW
+const boardAll: any[] = (() => {
+  const map: any = {};
+  sharedBoard.forEach((u: any) => { map[String(u.name).replace("@","").toLowerCase()] = Number(u.pts) || 0; });
+  if (user) map[user.toLowerCase()] = myPoints;
+  return Object.keys(map)
+    .map((k) => ({ name: "@" + k, pts: map[k], you: k === (user || "").toLowerCase() }))
+    .sort((a, b) => b.pts - a.pts);
+})();
 const boardTop = boardAll.slice(0, 10);
 const myBoardIdx = boardAll.findIndex((u) => u.you);
 
@@ -764,7 +713,7 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
   } else if (popup === "privacy") {
     popupUI = popupBox("Privacy", <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>SOSA Outfits Privacy - We only use your name, phone, and order to deliver your goods. We do not share your data.</p>);
   } else if (popup === "share") {
-  const refName = String(user || "").replace("@", "").toLowerCase().trim();
+  const refName = (user || "chijoe09").replace("@", "").trim();
   const referralLink = `https://sossa-v19.vercel.app/?ref=${refName}`;
   const enc = encodeURIComponent(referralLink);
   popupUI = popupBox("Share App", (
@@ -987,14 +936,13 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
           <div style={{ background: "#fff", color: "#000", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16 }}>
             <button onClick={() => setPanel(null)} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12 }}>← Back to Shop</button>
             <h2 style={{ margin: "10px 0 4px" }}>🏆 Leadership Board</h2>
-            <button onClick={loadSharedBoard} style={{ background: "#000", color: "#fff", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 700, margin: "4px 0 6px" }}>🔄 Refresh</button>
             {boardTop.map((u, i) => (
               <div key={u.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", padding: "10px 6px", background: u.you ? "#ffe066" : "transparent", borderRadius: u.you ? 8 : 0 }}>
                 <span style={{ fontWeight: 800, fontSize: 13 }}>#{i + 1} {u.name}{u.you ? <span style={{ marginLeft: 6, background: "#000", color: "#f5b301", borderRadius: 10, padding: "1px 7px", fontSize: 10 }}>(You)</span> : null}</span>
                 <span style={{ color: "#b45309", fontWeight: 800 }}>{u.pts.toFixed(1)} pts</span>
               </div>
             ))}
-            {myBoardIdx >= boardTop.length && <div style={{ marginTop: 10, background: "#ffe066", borderRadius: 8, padding: "10px 6px", fontWeight: 800, fontSize: 13 }}>Your Rank: #{myBoardIdx + 1} - {(boardAll[myBoardIdx]?.pts ?? myPoints).toFixed(1)} pts
+            {myBoardIdx >= 4 && <div style={{ marginTop: 10, background: "#ffe066", borderRadius: 8, padding: "10px 6px", fontWeight: 800, fontSize: 13 }}>Your Rank: #{myBoardIdx + 1} - {myPoints.toFixed(1)} pts</div>}
           </div>
         </div>
       )}
