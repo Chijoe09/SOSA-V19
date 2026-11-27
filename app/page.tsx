@@ -429,6 +429,25 @@ useEffect(() => {
     return () => { document.body.style.overflow = ""; };
   }, [appTourOpen]);
 
+  // ===== Welcome banner: once, auto-closes after 6 seconds with a countdown =====
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [welcomeLeft, setWelcomeLeft] = useState(6);
+  const closeWelcome = () => { setWelcomeOpen(false); try { localStorage.setItem("sosa-welcome-seen", "true"); } catch {} };
+  useEffect(() => {
+    if (!user || !ready) return; // starts when the shop is on screen
+    try { if (localStorage.getItem("sosa-welcome-seen") === "true") return; } catch {}
+    setWelcomeLeft(6);
+    setWelcomeOpen(true);
+  }, [user, ready]);
+  useEffect(() => {
+    if (!welcomeOpen) return;
+    const t = setInterval(() => setWelcomeLeft((n) => (n > 0 ? n - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [welcomeOpen]);
+  useEffect(() => {
+    if (welcomeOpen && welcomeLeft <= 0) { setWelcomeOpen(false); try { localStorage.setItem("sosa-welcome-seen", "true"); } catch {} }
+  }, [welcomeLeft, welcomeOpen]);
+
   const ratingList = Object.values(ratings) as any[];
   const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
   const myRating = user ? ratings[user] : null;
@@ -867,6 +886,16 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
       {menuUI}
       {popupUI}
       {appTourUI}
+      {welcomeOpen && (
+        <div role="status" style={{ position: "relative", background: "#f5b301", color: "#000", margin: "8px 12px 0", padding: "10px 32px 10px 12px", borderRadius: 12, boxSizing: "border-box" }}>
+          <button aria-label="Close" onClick={closeWelcome} style={{ position: "absolute", top: 4, right: 6, background: "transparent", border: 0, color: "#000", fontSize: 16, fontWeight: 800, lineHeight: 1, padding: 4 }}>X</button>
+          <div style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>{"Welcome to SOSA Outfits — Luxury wears, shoes & bags. Shop with Pi."}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+            <button onClick={closeWelcome} style={{ background: "#000", color: "#f5b301", border: 0, borderRadius: 20, padding: "6px 12px", fontSize: 11, fontWeight: 800 }}>Continue Shopping</button>
+            <span style={{ fontSize: 11, fontWeight: 700 }}>{"Closing in " + welcomeLeft + "..."}</span>
+          </div>
+        </div>
+      )}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
