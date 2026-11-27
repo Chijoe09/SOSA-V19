@@ -82,6 +82,18 @@ const newOrderCode = () => {
   return "SOSA-" + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + p(Math.floor(Math.random() * 10000), 4);
 };
 
+// App Tour: finds the real button(s) a step is talking about (returns one box covering them)
+const getAppTourRect = (step: number) => {
+  const ids = step === 2 ? ["tour-search", "tour-cats"] : step === 3 ? ["tour-cart"] : step === 4 ? ["tour-orders"] : step === 5 || step === 6 ? ["tour-menu"] : step === 7 ? ["tour-share"] : [];
+  const rs = ids.map((id) => document.getElementById(id)).filter(Boolean).map((el: any) => el.getBoundingClientRect());
+  if (!rs.length) return null;
+  const top = Math.min(...rs.map((r: any) => r.top));
+  const left = Math.min(...rs.map((r: any) => r.left));
+  const right = Math.max(...rs.map((r: any) => r.right));
+  const bottom = Math.max(...rs.map((r: any) => r.bottom));
+  return { top, left, width: right - left, height: bottom - top };
+};
+
 function SosaLogo() {
   return (
     <div style={{ width: 56, height: 62, background: "#FFF8DC", borderRadius: 10, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -396,6 +408,27 @@ useEffect(() => {
     }
   } catch {}
 }, []);
+
+  // ===== App Tour (replayable from the side menu) =====
+  const [appTourOpen, setAppTourOpen] = useState(false);
+  const [appTourStep, setAppTourStep] = useState(1);
+  const [appTourRect, setAppTourRect] = useState<any>(null);
+  const startAppTour = () => { setMenuOpen(false); setAppTourStep(1); setAppTourOpen(true); };
+  const skipAppTour = () => { setAppTourOpen(false); };
+  const finishAppTour = () => { try { localStorage.setItem("sosa-tour-done", "true"); } catch {} setAppTourOpen(false); };
+  useEffect(() => {
+    if (!appTourOpen) { setAppTourRect(null); return; }
+    window.scrollTo({ top: 0 });
+    const measure = () => setAppTourRect(getAppTourRect(appTourStep));
+    const t = setTimeout(measure, 60);
+    window.addEventListener("resize", measure);
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
+  }, [appTourOpen, appTourStep]);
+  useEffect(() => {
+    document.body.style.overflow = appTourOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [appTourOpen]);
+
   const ratingList = Object.values(ratings) as any[];
   const ratingAvg = ratingList.length ? (ratingList.reduce((a: number, r: any) => a + (Number(r.stars) || 0), 0) / ratingList.length).toFixed(1) : "";
   const myRating = user ? ratings[user] : null;
@@ -661,7 +694,6 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
         <button onClick={menuOpenBoard} style={mItem}><span>🏆 Leadership Board</span></button>
         <button onClick={() => menuOpenPopup("track")} style={mItem}><span>📦 Track Order</span></button>
         <button onClick={() => menuOpenPopup("rate")} style={mItem}><span>⭐ Rate Us{ratingAvg ? <span style={mSub}>Average ★ {ratingAvg}</span> : null}</span></button>
-        <button onClick={shareApp} style={mItem}><span>🔗 Share App</span></button>
         <a href={SOSA_WHATSAPP} target="_blank" rel="noopener noreferrer" onClick={closeMenu} style={mItem}><span>💬 WhatsApp Us</span></a>
         <a href={"mailto:" + SOSA_EMAIL} onClick={closeMenu} style={mItem}><span>✉️ Email Us<span style={mSub}>{SOSA_EMAIL}</span></span></a>
         <a href={SOSA_MAP} target="_blank" rel="noopener noreferrer" onClick={(e) => { closeMenu(); openExternal(e, SOSA_MAP); }} style={mItem}><span>📍 Sosa Map<span style={mSub}>No. 1, ODICHE STREET, COKER Aguda, ORILE, LAGOS. - Get Directions</span></span></a>
@@ -674,6 +706,7 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
           </a>
         ))}
 
+        <button onClick={startAppTour} style={{ ...mItem, marginTop: 18 }}><span>✨ App Tour</span></button>
         <button onClick={() => menuOpenPopup("about")} style={{ ...mItem, marginTop: 18 }}><span>About SOSA</span></button>
         <button onClick={() => menuOpenPopup("terms")} style={mItem}><span>Terms</span></button>
         <button onClick={() => menuOpenPopup("privacy")} style={mItem}><span>Privacy</span></button>
@@ -697,6 +730,49 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
     </div>
   );
   const linkBtn: any = { display: "block", textAlign: "center", textDecoration: "none", background: "#000", color: "#fff", borderRadius: 20, padding: "10px 0", fontWeight: 800, fontSize: 13, marginTop: 8 };
+
+  // ===== App Tour overlay =====
+  const appTourSteps: { title: string; text: string }[] = [
+    { title: "Welcome to SOSA", text: "Luxury wears, shoes, bags." },
+    { title: "Search + Categories", text: "Find your size fast." },
+    { title: "Cart", text: "Tap to see your items." },
+    { title: "My Orders", text: "Track Paid / Pending." },
+    { title: "Track Order", text: "Menu → Track Order. Enter Phone + Order Code to track delivery." },
+    { title: "Leadership Board", text: "Menu → Leadership Board. Earn 10 pts per 1 Pi." },
+    { title: "Share App", text: "Invite a friend, earn on their first order." },
+  ];
+  const tourCur = appTourSteps[appTourStep - 1];
+  const TR = appTourRect;
+  const tourPane: any = { position: "fixed", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" };
+  const appTourUI = appTourOpen && tourCur ? (
+    <div onClick={(e) => e.stopPropagation()} style={{ position: "fixed", inset: 0, zIndex: 90, display: "flex", justifyContent: "center", alignItems: TR ? "flex-end" : "center", padding: 12, boxSizing: "border-box" }}>
+      {TR ? (
+        <>
+          <div style={{ ...tourPane, top: 0, left: 0, right: 0, height: Math.max(0, TR.top - 6) }} />
+          <div style={{ ...tourPane, top: TR.top + TR.height + 6, left: 0, right: 0, bottom: 0 }} />
+          <div style={{ ...tourPane, top: Math.max(0, TR.top - 6), left: 0, width: Math.max(0, TR.left - 6), height: TR.height + 12 }} />
+          <div style={{ ...tourPane, top: Math.max(0, TR.top - 6), left: TR.left + TR.width + 6, right: 0, height: TR.height + 12 }} />
+          <div style={{ position: "fixed", top: TR.top - 6, left: TR.left - 6, width: TR.width + 12, height: TR.height + 12, border: "3px dotted #f5b301", borderRadius: 14, pointerEvents: "none", boxSizing: "border-box" }} />
+        </>
+      ) : (
+        <div style={{ ...tourPane, inset: 0 }} />
+      )}
+      <div style={{ position: "relative", zIndex: 2, background: "#fff", color: "#000", width: "100%", maxWidth: 340, maxHeight: "80vh", overflowY: "auto", borderRadius: 16, padding: 14, boxSizing: "border-box" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#777" }}>{"Step " + appTourStep + " / 7"}</div>
+        <h2 style={{ margin: "4px 0 4px", fontSize: 16, lineHeight: 1.25 }}>{tourCur.title}</h2>
+        <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: "#333" }}>{tourCur.text}</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+          <button onClick={skipAppTour} style={{ background: "#e0e0e0", color: "#555", border: 0, borderRadius: 20, padding: "8px 14px", fontSize: 12, fontWeight: 700 }}>Skip Tour</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            {appTourStep > 1 && <button onClick={() => setAppTourStep(appTourStep - 1)} style={{ background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 20, padding: "8px 14px", fontSize: 12, fontWeight: 700 }}>Back</button>}
+            {appTourStep < 7
+              ? <button onClick={() => setAppTourStep(appTourStep + 1)} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "8px 18px", fontSize: 12, fontWeight: 800 }}>Next</button>
+              : <button onClick={finishAppTour} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "8px 18px", fontSize: 12, fontWeight: 800 }}>Finish</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   let popupUI: any = null;
   if (popup === "about") {
@@ -790,10 +866,11 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
       {stuckBox}
       {menuUI}
       {popupUI}
+      {appTourUI}
       <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-            <button onClick={() => setMenuOpen(true)} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11, fontWeight: 800 }}>☰ Menu</button>
+            <button id="tour-menu" onClick={() => setMenuOpen(true)} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "5px 10px", fontSize: 11, fontWeight: 800 }}>☰ Menu</button>
             <SosaLogo />
           </div>
           <div>
@@ -803,15 +880,18 @@ const myBoardIdx = boardAll.findIndex((u) => u.you);
             <p style={{ fontSize: 11, margin: "2px 0 0", color: subText2 }}>Test Pi | {myPoints.toFixed(1)} pts | 18 Products</p>
           </div>
         </div>
-        <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6, flexShrink: 0 }}>
+          <button onClick={() => setDark(!dark)} style={{ background: dark ? "#f5b301" : "#000", color: dark ? "#000" : "#fff", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{dark ? "☀️ Light" : "🌙 Dark"}</button>
+          <button id="tour-share" onClick={shareApp} style={{ background: "#f5b301", color: "#000", border: 0, borderRadius: 20, padding: "6px 10px", fontSize: 11, fontWeight: 700 }}>Share App</button>
+        </div>
       </div>
       <div style={{ padding: "0 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>
         <button onClick={() => setPanel("logout")} style={btnStyle}>Logout</button>
-        <button onClick={() => setPanel("cart")} style={{ ...btnStyle, display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ position: "relative", display: "inline-block", fontSize: 16, lineHeight: 1, marginRight: 6 }}>🛒<span style={{ position: "absolute", top: -7, right: -9, minWidth: 15, height: 15, borderRadius: 8, background: "#e53935", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", boxSizing: "border-box", lineHeight: 1 }}>{cartCount}</span></span>Cart - {subtotal.toFixed(2)} Pi</button>
-        <button onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
+        <button id="tour-cart" onClick={() => setPanel("cart")} style={{ ...btnStyle, display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ position: "relative", display: "inline-block", fontSize: 16, lineHeight: 1, marginRight: 6 }}>🛒<span style={{ position: "absolute", top: -7, right: -9, minWidth: 15, height: 15, borderRadius: 8, background: "#e53935", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", boxSizing: "border-box", lineHeight: 1 }}>{cartCount}</span></span>Cart - {subtotal.toFixed(2)} Pi</button>
+        <button id="tour-orders" onClick={() => setPanel("orders")} style={btnStyle}>My Orders</button>
       </div>
-      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." style={{ display: "block", width: "calc(100% - 16px)", boxSizing: "border-box", margin: "8px 8px 0", height: 34, padding: "0 12px", borderRadius: 20, border: "none", fontSize: 13, background: "#fff", color: "#000" }} />
-      <div style={{ display: "flex", gap: 6, padding: "6px 8px 0", overflowX: "auto" }}>
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." id="tour-search" style={{ display: "block", width: "calc(100% - 16px)", boxSizing: "border-box", margin: "8px 8px 0", height: 34, padding: "0 12px", borderRadius: 20, border: "none", fontSize: 13, background: "#fff", color: "#000" }} />
+      <div id="tour-cats" style={{ display: "flex", gap: 6, padding: "6px 8px 0", overflowX: "auto" }}>
         {["All", "Heel", "Flat", "Palm Slide", "Bag"].map((c) => (
           <button key={c} onClick={() => setCategory(c)} style={{ flexShrink: 0, border: 0, borderRadius: 20, padding: "4px 11px", fontSize: 11, fontWeight: 700, background: category === c ? "#f5b301" : (dark ? "#222" : "#ddd"), color: category === c ? "#000" : mainText }}>{c}</button>
         ))}
